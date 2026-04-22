@@ -28,7 +28,7 @@ The system captures real-time video streams, performs lightweight blink recognit
 
 # ✨ For User
 
-To be supplemented!  
+To be supplemented!
 
 ---
 

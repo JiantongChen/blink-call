@@ -1,5 +1,6 @@
 logging
 markdown
 nuitka
+opencv-python
 pre_commit
 PySide6

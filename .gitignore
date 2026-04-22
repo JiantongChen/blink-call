@@ -135,5 +135,7 @@ logs/
 **/*.mp4
 
 # custom
+.codex
+.vscode/
 *.build/
 *.dist/
