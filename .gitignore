@@ -139,3 +139,5 @@ logs/
 .vscode/
 *.build/
 *.dist/
+
+configs/local_config.yaml

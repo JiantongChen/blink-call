@@ -1,4 +1,5 @@
 import argparse
+import socket
 
 import cv2
 from flask import Flask, Response, jsonify
@@ -18,8 +19,9 @@ class BlinkCameraServer:
 
         self._setup_routes()
 
-    def _find_camera_index(self):
-        for idx in range(self.max_index):
+    @staticmethod
+    def find_camera_index(max_index=10):
+        for idx in range(max_index):
             cap = cv2.VideoCapture(idx)
             if not cap.isOpened():
                 cap.release()
@@ -33,25 +35,47 @@ class BlinkCameraServer:
 
         return None
 
-    def _open_camera(self):
-        index = self.camera_index
+    @staticmethod
+    def open_camera(camera_index=None, max_index=10):
+        index = camera_index
         if index is None:
-            index = self._find_camera_index()
+            index = BlinkCameraServer.find_camera_index(max_index=max_index)
             if index is None:
-                return None
+                return None, None
 
         cap = cv2.VideoCapture(index)
         if not cap.isOpened():
             cap.release()
-            return None
+            return None, None
 
         ok, _ = cap.read()
         if not ok:
             cap.release()
+            return None, None
+
+        return cap, index
+
+    def _open_camera(self):
+        cap, index = self.open_camera(
+            camera_index=self.camera_index,
+            max_index=self.max_index,
+        )
+        if cap is None:
             return None
 
         self.camera_index = index
         return cap
+
+    @staticmethod
+    def get_local_ip():
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+        except OSError:
+            return "127.0.0.1"
+        finally:
+            sock.close()
 
     def camera_available(self):
         return self.cap is not None and self.cap.isOpened()

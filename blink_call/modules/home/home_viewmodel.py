@@ -13,16 +13,26 @@ class HomeViewModel(QObject):
     def __init__(self, model):
         super().__init__()
         self.model = model
-        self.camera_mode = "local"
-        self.local_camera_id = None
-        self.remote_ip = ""
-        self.remote_port = 10000
+
+        (
+            self.camera_mode,
+            self.local_camera_id,
+            self.remote_ip,
+            self.remote_port,
+        ) = self.model.load_camera_config()
 
         self.setting_model = SettingModel()
+        self.setting_model.set_camera_config(
+            self.camera_mode,
+            self.local_camera_id if self.local_camera_id is not None else 0,
+            self.remote_ip,
+            self.remote_port,
+        )
         self.setting_vm = SettingViewModel(
             self.setting_model,
             self.apply_camera_config,
             self.start_local_camera_service,
+            self.restore_default_config,
         )
 
         self.timer = QTimer(self)
@@ -35,18 +45,18 @@ class HomeViewModel(QObject):
     def _start_home_camera(self):
         if self.model.service_server is not None:
             self.timer.stop()
-            self.status_changed.emit("摄像头服务已启动，当前页面仅显示服务状态")
+            self.status_changed.emit("Camera service is running. This page shows service status only.")
             return
 
         if self.camera_mode != "local":
             self.timer.stop()
-            self.status_changed.emit("当前为指定其他摄像头模式，请在设置中填写 IP 和 Port")
+            self.status_changed.emit("Remote camera mode is active. Set IP and port in Settings.")
             return
 
         ok = self.model.open_camera(self.local_camera_id)
         if not ok:
             self.timer.stop()
-            self.status_changed.emit("未检测到可用摄像头，请在设置中配置")
+            self.status_changed.emit("No available camera detected. Please configure it in Settings.")
             return
 
         self.timer.start()
@@ -55,7 +65,7 @@ class HomeViewModel(QObject):
         frame = self.model.read_frame()
         if frame is None:
             self.timer.stop()
-            self.status_changed.emit("未检测到可用摄像头，请在设置中配置")
+            self.status_changed.emit("No available camera detected. Please configure it in Settings.")
             return
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -70,7 +80,20 @@ class HomeViewModel(QObject):
         self.camera_mode = mode
         self.local_camera_id = local_camera_id if mode == "local" else None
         self.remote_ip = remote_ip
-        self.remote_port = remote_port
+        self.remote_port = int(remote_port)
+
+        self.setting_model.set_camera_config(
+            mode,
+            local_camera_id,
+            remote_ip,
+            self.remote_port,
+        )
+        self.model.save_camera_config(
+            self.camera_mode,
+            self.local_camera_id,
+            self.remote_ip,
+            self.remote_port,
+        )
         self._start_home_camera()
 
     def start_local_camera_service(self, local_camera_id):
@@ -78,7 +101,25 @@ class HomeViewModel(QObject):
         self.timer.stop()
 
         if not ok:
-            self.status_changed.emit("未检测到可用摄像头，请在设置中配置")
+            self.status_changed.emit("No available camera detected. Please configure it in Settings.")
             return
 
-        self.status_changed.emit(f'已启动摄像头服务，请在其他电脑选择"指定其他摄像头"，并填写ip和port为{ip}和{port}')
+        self.status_changed.emit(
+            f'Service started. On another device choose "Remote Camera" and use {ip}:{port}.'
+        )
+
+    def restore_default_config(self):
+        (
+            self.camera_mode,
+            self.local_camera_id,
+            self.remote_ip,
+            self.remote_port,
+        ) = self.model.reset_camera_config_to_default()
+
+        self.setting_model.set_camera_config(
+            self.camera_mode,
+            self.local_camera_id if self.local_camera_id is not None else 0,
+            self.remote_ip,
+            self.remote_port,
+        )
+        self._start_home_camera()

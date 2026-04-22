@@ -1,484 +1,150 @@
-/* =========================
-   Global
-========================= */
-
-* {
-    font-family: "Inter";
-    font-size: 14px;
-}
-
-
-/* =========================
-   QWidget
-========================= */
-
+/* Base */
 QWidget {
-    background: #F2E5D7;
-    color: #333;
-    border-radius: 8px;
-}
-
-QWidget#projectList {
-    background: #F2E5D7;
-    color: #333;
-    border: 1px solid #D6C9BD;
-}
-
-
-QWidget#textContainer {
-    background-color: #FFFFFF;
-    border: 1px solid #000000ff;
-    border-radius: 8px;
-}
-
-
-/* =========================
-   QPushButton
-========================= */
-
-QPushButton {
-    border: 1px solid #999;      /* 边框颜色 */
-    border-radius: 8px;          /* 圆角 */
-    background-color: #E8F6F3;   /* 背景色 */
-    color: #333;                  /* 字体颜色 */
-    text-align: center;           /* 文字居中 */
-    padding: 8px;                 /* 内边距，增加视觉面积 */
-    font-size: 16px;             /* 字体大小 */
-    font-weight: 600;            /* 加粗 400=普通, 600=半粗, 700=粗体 */
-}
-
-QPushButton:hover {
-    background-color: #d9eaff;   /* 悬停背景 */
-}
-
-QPushButton:pressed {
-    background-color: #b3d1ff;   /* 按下背景 */
-}
-
-QPushButton:disabled {
-    background-color: #E5E5E5;
-    color: #999;
-}
-
-/* 新建项目按钮 */
-QPushButton#addProject {
-    border: none;
-    background: none;
-    color: #0066FF;
-    font-size: 18px;
-    font-weight: 700;
-    text-align: center;
-    padding: 10px 0;
-}
-
-QPushButton#addProject:hover {
-    color: #003399;
-}
-
-QPushButton#addProject:disabled {
-    color: #999;
-}
-
-/* 获取令牌按钮 —— 普通状态 */
-QPushButton#getTokenBtn {
-    color: #888;
-    border: none;
-    font-size: 12px;
-    padding: 6px 6px;
-}
-
-/* 获取令牌按钮 —— 悬停状态 */
-QPushButton#getTokenBtn:hover {
-    color: #333;
-    text-decoration: underline;
-}
-
-/* 确认按钮：绿色主按钮 */
-QPushButton#okBtn {
-    background-color: #6da76f;    /* 绿色 */
-    border: none;
-    color: white;
-}
-
-QPushButton#okBtn:hover {
-    background-color: #43A047;
-}
-
-QPushButton#okBtn:pressed {
-    background-color: #388E3C;
-}
-
-/* 停止或删除按钮：红色主按钮 */
-QPushButton#stopOrDelBtn {
-    background-color: #e57373;    /* 主红色（柔和） */
-    border: none;
-    color: white;
-}
-
-QPushButton#stopOrDelBtn:hover {
-    background-color: #D32F2F;    /* 深红（Hover） */
-}
-
-QPushButton#stopOrDelBtn:pressed {
-    background-color: #B71C1C;    /* 暗红（Pressed） */
-}
-
-QPushButton#stopOrDelBtn:disabled {
-    background-color: #E5E5E5;
-    color: #999;
-}
-
-QPushButton[state="go"] {
-    background-color: #6da76f;
-    color: white;
-}
-
-QPushButton[state="go"]:hover {
-    background-color: #43A047;
-}
-
-QPushButton[state="go"]:pressed {
-    background-color: #388E3C;
-}
-
-QPushButton[state="stop"] {
-    background-color: #e57373;
-    color: white;
-}
-
-QPushButton[state="stop"]:hover {
-    background-color: #D32F2F;
-}
-
-QPushButton[state="stop"]:pressed {
-    background-color: #B71C1C;
-}
-
-/* 常规按钮（对话框取消/返回） */
-QPushButton#normalButton {
-    background-color: #DDE7F2;   /* 柔和灰蓝 */
-    border: none;                /* 无边框，更现代 */
-    color: #333;
-    padding: 8px 16px;           /* 更容易点到 */
-    border-radius: 8px;
-    font-weight: 600;            /* 半粗，与其他按钮保持一致 */
-}
-
-QPushButton#normalButton:hover {
-    background-color: #C9D8E8;
-}
-
-QPushButton#normalButton:pressed {
-    background-color: #B8CADA;
-}
-
-QPushButton#normalButton:disabled {
-    background-color: #E5E5E5;   /* 与其他 disabled 保持一致 */
-    color: #999;
-}
-
-/* =========================
-   QLineEdit + QTextEdit
-========================= */
-
-QLineEdit {
-    background: #FFFFFF;
-    border: 1px solid #000000ff;
-    border-radius: 8px;
-    padding: 8px;
-}
-
-QLineEdit:focus, QTextEdit:focus {
-    border: 1px solid #4C8DFF;
-}
-
-QLineEdit::placeholder, QTextEdit::placeholder {
-    color: #999;
-}
-
-QTextEdit {
-    background: transparent;
-    border: none;
-    padding: 8px;
-}
-
-QTextEdit#dialogText {
-    font-size: 18px;
-    font-weight: 700;
-    color: #333;
-    padding: 6px;
-    border: none;            /* 如果你不想要边框 */
-    background: transparent; /* 如果要透明 */
-}
-
-
-/* =========================
-   QLabel
-========================= */
-
-QLabel#sectionTitle {
-    font-weight: 600;        /* 加粗 */
-    font-size: 16px;         /* 微微放大 */
-    color: #333;             /* 看需要 */
-    padding: 4px 0 4px 0;          /* 更凸显 */
-}
-
-QLabel#requiredStar {
-    color: #ff0000;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 4px;
-}
-
-QLabel#projectInfoTitle {
-    font-weight: 700;        /* 加粗 */
-    font-size: 18px;         /* 微微放大 */
-    color: #333;             /* 看需要 */
-    padding: 4px 0 4px 0;          /* 更凸显 */
-}
-
-QLabel#projectInfoTextLabel {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-}
-
-QLabel#projectInfoSectionTitle {
-    background-color: #F2E5D7;   /* 标题背景色，与主题一致 */
-    color: #333;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    margin-top: 0px;           /* 让标题悬浮在卡片边框上方 */
-}
-
-
-/* =========================
-   QScrollArea
-========================= */
-
-QScrollArea {
-    background: transparent;
-    border: none;
-}
-
-
-/* =========================
-   Vertical ScrollBar
-========================= */
-
-/* 垂直滚动条整体 */
-QScrollBar:vertical {
-    background: transparent;
-    width: 8px;           /* 细一点更现代 */
-    margin: 0px;
-    border-radius: 4px;   /* 整体圆角 */
-}
-
-/* 滚动条滑块 */
-QScrollBar::handle:vertical {
-    background: #A5D6A7;         /* 滑块颜色 */
-    min-height: 20px;
-    border-radius: 4px;
-}
-
-/* 鼠标悬停 */
-QScrollBar::handle:vertical:hover {
-    background: #81C784;
-}
-
-/* 按下状态 */
-QScrollBar::handle:vertical:pressed {
-    background: #66BB6A;
-}
-
-/* 上下箭头隐藏 */
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {
-    height: 0px;
-    subcontrol-origin: margin;
-}
-
-/* 滚动槽背景 */
-QScrollBar::add-page:vertical,
-QScrollBar::sub-page:vertical {
-    background: #E2EFE2;
-    border-radius: 4px;
-}
-
-
-/* =========================
-   Horizontal ScrollBar
-========================= */
-
-/* 横向滚动条整体 */
-QScrollBar:horizontal {
-    background: transparent;
-    height: 8px;          /* 横向滚动条的高度 */
-    margin: 0px;
-    border-radius: 4px;
-}
-
-/* 滚动条滑块 */
-QScrollBar::handle:horizontal {
-    background: #A5D6A7;         /* 滑块颜色 */
-    min-width: 20px;
-    border-radius: 4px;
-}
-
-/* 鼠标悬停 */
-QScrollBar::handle:horizontal:hover {
-    background: #81C784;
-}
-
-/* 按下状态 */
-QScrollBar::handle:horizontal:pressed {
-    background: #66BB6A;
-}
-
-/* 左右箭头隐藏 */
-QScrollBar::add-line:horizontal,
-QScrollBar::sub-line:horizontal {
-    width: 0px;
-    subcontrol-origin: margin;
-}
-
-/* 滚动槽背景 */
-QScrollBar::add-page:horizontal,
-QScrollBar::sub-page:horizontal {
-    background: #E2EFE2;
-    border-radius: 4px;
-}
-
-
-/* =========================
-   QFrame
-========================= */
-
-#dividerLine {
-    background-color: #CCCCCC;
-    height: 1px;
-}
-
-
-/* =========================
-   QProgressBar
-========================= */
-
-#progressLabel {
+    color: #1f2937;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
     font-size: 14px;
-    color: #444;
 }
 
-/* 进度条背景 */
-QProgressBar {
-    border: 0px;
+/* Home */
+QWidget#homeView {
+    background: #000000;
+}
+
+QLabel#homeVideoLabel {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+QPushButton#homeSettingBtn {
+    background: rgba(255, 255, 255, 0.92);
+    color: #111827;
+    border: none;
     border-radius: 8px;
-    background-color: #e0e0e0;
-    text-align: center;
-    height: 16px;
     font-size: 14px;
-    font-weight: bold;
-    color: #4c4c4c;
+    font-weight: 600;
 }
 
-/* 进度条填充 */
-QProgressBar::chunk {
-    border-radius: 8px;
-    background-color: #6da76f;  /* 你的常用绿色 */
+QPushButton#homeSettingBtn:hover {
+    background: #ffffff;
 }
 
+QPushButton#homeSettingBtn:pressed {
+    background: #e5e7eb;
+}
 
-/* =========================
-   QSpinBox
-========================= */
+/* Setting popup */
+QWidget#settingOverlay {
+    background-color: rgba(0, 0, 0, 120);
+}
 
+QFrame#settingPanel {
+    background: #ffffff;
+    border-radius: 12px;
+}
+
+QLabel#settingTitle {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+QFrame#settingCameraGroup {
+    background: #f8fafc;
+    border-radius: 10px;
+}
+
+QLabel#settingSectionTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+QLabel#settingChooseLabel {
+    color: #374151;
+}
+
+QLineEdit,
 QSpinBox {
-    background: #FFFFFF;
-    border: 1px solid #AAAAAA;
-    border-radius: 4px;
-    padding-right: 4px;  /* 给右侧按钮预留空间 */
-    padding-left: 6px;
-    min-height: 26px;
+    min-height: 30px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: #ffffff;
 }
 
-/* 当获得焦点时 */
+QLineEdit:focus,
 QSpinBox:focus {
-    border: 1px solid #4C8DFF;
+    border: 1px solid #2563eb;
 }
 
-/* 按钮区域透明，不覆盖箭头 */
-QSpinBox::up-button,
-QSpinBox::down-button {
-    width: 18px;
-    background: transparent;
-    border-left: 1px solid #AAAAAA;
+QRadioButton {
+    color: #111827;
 }
 
-/* 悬停效果 */
-QSpinBox::up-button:hover,
-QSpinBox::down-button:hover {
-    background: #EDEDED;
-}
-
-/* 按下效果 */
-QSpinBox::up-button:pressed,
-QSpinBox::down-button:pressed {
-    background: #DCDCDC;
-}
-
-QSpinBox::up-arrow {
-    image: url("assets/icons/up_arrow.png");
-    width: 18px;
-    height: 8px;
-}
-
-QSpinBox::down-arrow {
-    image: url("assets/icons/down_arrow.png");
-    width: 8px;
-    height: 8px;
-}
-
-
-/* =========================
-   QSpinBox
-========================= */
-
-/* 默认圆圈 */
 QRadioButton::indicator {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
 }
 
-/* 未选中状态 */
 QRadioButton::indicator:unchecked {
-    border: 2px solid #555;
-    background-color: #fff;
-    border-radius: 8px;
+    border: 2px solid #6b7280;
+    border-radius: 7px;
+    background: #ffffff;
 }
 
-/* 选中状态 */
 QRadioButton::indicator:checked {
-    border: 2px solid #5c94c2;      /* 边框颜色 */
-    background-color: #5c94c2;      /* 填充选中色（微软蓝） */
-    border-radius: 8px;
+    border: 2px solid #2563eb;
+    border-radius: 7px;
+    background: #2563eb;
 }
 
-
-/* =====================================================
-   QFrame
-===================================================== */
-
-QFrame#projectInfoCard {
-    background-color: none;
-    border: 2px solid #D6C9BD; /* 卡片边框 */
+QPushButton#settingSaveBtn,
+QPushButton#settingResetBtn,
+QPushButton#settingStartServiceBtn {
+    min-height: 34px;
+    border: none;
     border-radius: 8px;
-    padding: 15px 10px 10px 10px; /* 上边距留给标题悬浮 */
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 14px;
 }
 
+QPushButton#settingSaveBtn {
+    background: #2563eb;
+    color: #ffffff;
+}
 
+QPushButton#settingSaveBtn:hover {
+    background: #1d4ed8;
+}
 
-/* =========================
-   End
-========================= */
+QPushButton#settingSaveBtn:pressed {
+    background: #1e40af;
+}
+
+QPushButton#settingStartServiceBtn {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+QPushButton#settingStartServiceBtn:hover {
+    background: #d1d5db;
+}
+
+QPushButton#settingStartServiceBtn:pressed {
+    background: #9ca3af;
+}
+
+QPushButton#settingResetBtn {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+QPushButton#settingResetBtn:hover {
+    background: #d97706;
+}
+
+QPushButton#settingResetBtn:pressed {
+    background: #b45309;
+}

@@ -1,10 +1,8 @@
-import socket
 import threading
 from typing import Optional
 
-import cv2
-
 from blink_call.camer_server.start_server import BlinkCameraServer
+from blink_call.utils.helper import Helper
 
 
 class HomeModel:
@@ -14,36 +12,54 @@ class HomeModel:
         self.service_server = None
         self.service_thread = None
 
-    def find_camera_index(self, max_index=10):
-        for idx in range(max_index):
-            cap = cv2.VideoCapture(idx)
-            if not cap.isOpened():
-                cap.release()
-                continue
+    def load_camera_config(self):
+        default_camera_cfg = (Helper.get_default_config().get("camera") or {})
+        default_remote_cfg = default_camera_cfg.get("remote") or {}
 
-            ok, _ = cap.read()
-            cap.release()
-            if ok:
-                return idx
+        local_config = Helper.get_local_config()
+        camera_cfg = local_config.get("camera") or {}
+        remote_cfg = camera_cfg.get("remote") or {}
 
-        return None
+        mode = camera_cfg.get("mode", default_camera_cfg.get("mode", "local"))
+        local_camera_id = camera_cfg.get(
+            "local_camera_id",
+            default_camera_cfg.get("local_camera_id"),
+        )
+        remote_ip = remote_cfg.get("ip", default_remote_cfg.get("ip", ""))
+        remote_port = remote_cfg.get(
+            "port",
+            default_remote_cfg.get("port", 10000),
+        )
+        try:
+            remote_port = int(remote_port)
+        except (TypeError, ValueError):
+            remote_port = int(default_remote_cfg.get("port", 10000))
+
+        return mode, local_camera_id, remote_ip, remote_port
+
+    def save_camera_config(self, mode, local_camera_id, remote_ip, remote_port):
+        Helper.update_local_config(
+            {
+                "camera": {
+                    "mode": mode,
+                    "local_camera_id": local_camera_id if mode == "local" else None,
+                    "remote": {
+                        "ip": remote_ip,
+                        "port": int(remote_port),
+                    },
+                }
+            }
+        )
+
+    def reset_camera_config_to_default(self):
+        Helper.reset_local_config_to_default()
+        return self.load_camera_config()
 
     def open_camera(self, camera_id: Optional[int]):
         self.release_camera()
 
-        if camera_id is None:
-            camera_id = self.find_camera_index()
-            if camera_id is None:
-                return False
-
-        cap = cv2.VideoCapture(camera_id)
-        if not cap.isOpened():
-            cap.release()
-            return False
-
-        ok, _ = cap.read()
-        if not ok:
-            cap.release()
+        cap, camera_id = BlinkCameraServer.open_camera(camera_index=camera_id)
+        if cap is None:
             return False
 
         self.capture = cap
@@ -67,7 +83,7 @@ class HomeModel:
 
     def start_local_camera_service(self, camera_id: Optional[int]):
         if self.service_server is not None:
-            return True, self.get_local_ip(), self.service_server.port
+            return True, BlinkCameraServer.get_local_ip(), self.service_server.port
 
         self.release_camera()
 
@@ -81,15 +97,4 @@ class HomeModel:
         self.service_server = server
         self.service_thread = thread
 
-        return True, self.get_local_ip(), server.port
-
-    @staticmethod
-    def get_local_ip():
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            sock.connect(("8.8.8.8", 80))
-            return sock.getsockname()[0]
-        except OSError:
-            return "127.0.0.1"
-        finally:
-            sock.close()
+        return True, BlinkCameraServer.get_local_ip(), server.port

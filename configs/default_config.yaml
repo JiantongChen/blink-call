@@ -1,0 +1,6 @@
+﻿camera:
+  mode: local
+  local_camera_id: 0
+  remote:
+    ip: ''
+    port: 10000

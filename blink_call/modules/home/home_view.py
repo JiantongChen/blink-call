@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QSizePolicy
 
 from blink_call.modules.setting import SettingView
 
@@ -11,17 +11,22 @@ class HomeView(QWidget):
         self.vm = vm
         self.nav = nav
 
-        self.setStyleSheet("background: #000;")
+        self.setObjectName("homeView")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.video_label = QLabel("未检测到可用摄像头，请在设置中配置")
+        self.video_label.setObjectName("homeVideoLabel")
         self.video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.video_label.setStyleSheet("color: white; font-size: 24px; font-weight: 700;")
+        self.video_label.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Ignored
+        )
         layout.addWidget(self.video_label)
 
         self.setting_btn = QPushButton("设置", self)
+        self.setting_btn.setObjectName("homeSettingBtn")
         self.setting_btn.setFixedSize(88, 36)
         self.setting_btn.move(20, 20)
         self.setting_btn.clicked.connect(self.vm.open_settings)
