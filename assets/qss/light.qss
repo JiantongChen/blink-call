@@ -11,26 +11,48 @@ QWidget#homeView {
 }
 
 QLabel#homeVideoLabel {
-    color: #ffffff;
+    color: #374151;
     font-size: 24px;
     font-weight: 700;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 8px 12px;
+    border-radius: 8px;
 }
 
-QPushButton#homeSettingBtn {
+QPushButton#homeSettingBtn,
+QPushButton#homeExitBtn {
     background: rgba(255, 255, 255, 0.92);
     color: #111827;
-    border: none;
+    border: 1px solid #111827;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
 }
 
-QPushButton#homeSettingBtn:hover {
+QPushButton#homeSettingBtn:hover,
+QPushButton#homeExitBtn:hover {
     background: #ffffff;
 }
 
-QPushButton#homeSettingBtn:pressed {
+QPushButton#homeSettingBtn:pressed,
+QPushButton#homeExitBtn:pressed {
     background: #e5e7eb;
+}
+
+QPushButton#homeExitBtn {
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QPushButton#homeExitBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#homeExitBtn:pressed {
+    background: #991b1b;
 }
 
 /* Setting popup */
@@ -49,8 +71,10 @@ QLabel#settingTitle {
     color: #111827;
 }
 
-QFrame#settingCameraGroup {
-    background: #f8fafc;
+QFrame#settingGeneralGroup,
+QFrame#settingCameraGroup,
+QFrame#settingOtherGroup {
+    background: #e8edf3;
     border-radius: 10px;
 }
 
@@ -60,12 +84,26 @@ QLabel#settingSectionTitle {
     color: #111827;
 }
 
+QLabel#settingSubSectionTitle {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
 QLabel#settingChooseLabel {
     color: #374151;
 }
 
+QFrame#settingSectionDivider {
+    background: #c6ced8;
+    min-height: 1px;
+    max-height: 1px;
+    border: none;
+}
+
 QLineEdit,
-QSpinBox {
+QSpinBox,
+QComboBox {
     min-height: 30px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
@@ -73,8 +111,18 @@ QSpinBox {
     background: #ffffff;
 }
 
+QSpinBox {
+    padding-right: 24px;
+}
+
+QSpinBox::up-button,
+QSpinBox::down-button {
+    width: 20px;
+}
+
 QLineEdit:focus,
-QSpinBox:focus {
+QSpinBox:focus,
+QComboBox:focus {
     border: 1px solid #2563eb;
 }
 
@@ -100,6 +148,7 @@ QRadioButton::indicator:checked {
 }
 
 QPushButton#settingSaveBtn,
+QPushButton#settingCloseBtn,
 QPushButton#settingResetBtn,
 QPushButton#settingStartServiceBtn {
     min-height: 34px;
@@ -123,28 +172,42 @@ QPushButton#settingSaveBtn:pressed {
     background: #1e40af;
 }
 
-QPushButton#settingStartServiceBtn {
-    background: #e5e7eb;
+QPushButton#settingCloseBtn {
+    background: #9ca3af;
     color: #111827;
 }
 
-QPushButton#settingStartServiceBtn:hover {
-    background: #d1d5db;
+QPushButton#settingCloseBtn:hover {
+    background: #6b7280;
 }
 
-QPushButton#settingStartServiceBtn:pressed {
-    background: #9ca3af;
+QPushButton#settingCloseBtn:pressed {
+    background: #4b5563;
+    color: #f9fafb;
 }
 
-QPushButton#settingResetBtn {
+QPushButton#settingStartServiceBtn {
     background: #f59e0b;
     color: #ffffff;
 }
 
-QPushButton#settingResetBtn:hover {
+QPushButton#settingStartServiceBtn:hover {
     background: #d97706;
 }
 
-QPushButton#settingResetBtn:pressed {
+QPushButton#settingStartServiceBtn:pressed {
     background: #b45309;
+}
+
+QPushButton#settingResetBtn {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+QPushButton#settingResetBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#settingResetBtn:pressed {
+    background: #991b1b;
 }

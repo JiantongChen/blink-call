@@ -37,6 +37,26 @@ class HomeModel:
 
         return mode, local_camera_id, remote_ip, remote_port
 
+    def load_ui_language(self):
+        default_ui_cfg = (Helper.get_default_config().get("ui") or {})
+        local_ui_cfg = (Helper.get_local_config().get("ui") or {})
+        return local_ui_cfg.get("language", default_ui_cfg.get("language", "zh"))
+
+    def load_local_service_config(self):
+        default_service_cfg = (Helper.get_default_config().get("local_service") or {})
+        local_service_cfg = (Helper.get_local_config().get("local_service") or {})
+        camera_id = local_service_cfg.get("camera_id", default_service_cfg.get("camera_id", 0))
+        port = local_service_cfg.get("port", default_service_cfg.get("port", 10000))
+        try:
+            camera_id = int(camera_id)
+        except (TypeError, ValueError):
+            camera_id = int(default_service_cfg.get("camera_id", 0))
+        try:
+            port = int(port)
+        except (TypeError, ValueError):
+            port = int(default_service_cfg.get("port", 10000))
+        return camera_id, port
+
     def save_camera_config(self, mode, local_camera_id, remote_ip, remote_port):
         Helper.update_local_config(
             {
@@ -47,6 +67,19 @@ class HomeModel:
                         "ip": remote_ip,
                         "port": int(remote_port),
                     },
+                }
+            }
+        )
+
+    def save_ui_language(self, language):
+        Helper.update_local_config({"ui": {"language": language}})
+
+    def save_local_service_config(self, camera_id, port):
+        Helper.update_local_config(
+            {
+                "local_service": {
+                    "camera_id": int(camera_id),
+                    "port": int(port),
                 }
             }
         )
@@ -81,13 +114,13 @@ class HomeModel:
             self.capture.release()
             self.capture = None
 
-    def start_local_camera_service(self, camera_id: Optional[int]):
+    def start_local_camera_service(self, camera_id: Optional[int], port: Optional[int]):
         if self.service_server is not None:
             return True, BlinkCameraServer.get_local_ip(), self.service_server.port
 
         self.release_camera()
 
-        server = BlinkCameraServer(camera_index=camera_id)
+        server = BlinkCameraServer(camera_index=camera_id, port=port)
         if not server.camera_available():
             return False, None, None
 
@@ -98,3 +131,12 @@ class HomeModel:
         self.service_thread = thread
 
         return True, BlinkCameraServer.get_local_ip(), server.port
+
+    def stop_local_camera_service(self):
+        if self.service_server is None:
+            return
+        if self.service_server.cap is not None:
+            self.service_server.cap.release()
+            self.service_server.cap = None
+        self.service_server = None
+        self.service_thread = None

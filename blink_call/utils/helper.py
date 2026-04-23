@@ -77,7 +77,7 @@ class Helper:
         return default_config
 
     @classmethod
-    def get_available_port():
+    def get_available_port(cls):
         while True:
             _port = random.randrange(10000, 65536)
 
@@ -86,6 +86,3 @@ class Helper:
 
             if _flag:
                 return _port
-
-
-Utils = Helper

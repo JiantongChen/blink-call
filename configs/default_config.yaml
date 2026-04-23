@@ -4,3 +4,8 @@
   remote:
     ip: ''
     port: 10000
+local_service:
+  camera_id: 0
+  port: 10000
+ui:
+  language: zh
