@@ -36,5 +36,5 @@ class SettingViewModel(QObject):
         self.close_requested.emit()
 
     def start_local_service_only(self):
-        self.start_local_service.emit()
         self.close_requested.emit()
+        self.start_local_service.emit()

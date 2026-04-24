@@ -105,8 +105,8 @@ class HomeViewModel(QObject):
         self.frame_ready.emit(image)
 
     def start_local_camera_service(self):
-        local_camera_id = self.setting_vm.get("local_service.camera_id", source="temp")
-        service_port = self.setting_vm.get("local_service.port", source="temp")
+        local_camera_id = self.setting_vm.get_config("local_service.camera_id", source="temp")
+        service_port = self.setting_vm.get_config("local_service.port", source="temp")
         ok, ip, port = self.model.start_local_camera_service(local_camera_id, service_port)
         self.timer.stop()
 

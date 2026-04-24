@@ -13,7 +13,7 @@ class RemoteCameraClient:
     STATUS_CAMERA_NOT_FOUND = "remote_camera_not_found"
     STATUS_CANNOT_CONNECT = "cannot_connect"
 
-    def __init__(self, ip: str, port: int, timeout: float = 3, interval: float = 0.2):
+    def __init__(self, ip: str, port: int, timeout: float = 3, interval: float = 0.03):
         self.ip = ip
         self.port = port
         self.timeout = timeout

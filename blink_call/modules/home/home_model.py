@@ -55,6 +55,7 @@ class HomeModel:
             return False
 
         self.local_capture = capture
+        self.active_mode = Mode.LOCAL
         self._status = Status.OK
         return True
 
@@ -65,6 +66,7 @@ class HomeModel:
         client.start()
 
         self.remote_client = client
+        self.active_mode = Mode.REMOTE
         self._status = Status.OK
         return True
 
@@ -82,6 +84,7 @@ class HomeModel:
             return False, None, None
 
         self.service_server = server
+        self.active_mode = Mode.SERVER
         self._status = Status.OK
         return True, Helper.get_local_ip(), service_port
 

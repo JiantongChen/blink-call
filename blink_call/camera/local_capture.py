@@ -5,8 +5,9 @@ import cv2
 
 
 class LocalCameraCapture:
-    def __init__(self, camera_id: int = 0):
+    def __init__(self, camera_id: int = 0, interval: float = 0.03):
         self.camera_id = camera_id
+        self.interval = interval
 
         self.cap = None
         self.running = False
@@ -50,7 +51,7 @@ class LocalCameraCapture:
                     self.latest_frame = frame
             else:
                 self.camera_found = False
-                time.sleep(0.05)
+            time.sleep(self.interval)
 
     def read_latest_frame(self):
         with self._lock:

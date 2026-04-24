@@ -198,7 +198,7 @@ class SettingView(QWidget):
         service_cfg_row.addStretch()
         other_layout.addLayout(service_cfg_row)
         self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
-        self.bind_spinbox(self.service_port, "local_service.camera_id")
+        self.bind_spinbox(self.service_port, "local_service.port")
 
         start_btn_row = QHBoxLayout()
         start_btn_row.addSpacing(24)
@@ -300,10 +300,7 @@ class SettingView(QWidget):
         self.service_port_label.setText(i18n["service_port"])
 
     def _start_service(self):
-        self.vm.start_local_service_only(
-            self.service_camera_id.value(),
-            self.service_port.value(),
-        )
+        self.vm.start_local_service_only()
 
     def _restore_default(self):
         i18n = SETTING_I18N.get(self.vm.model.get("ui.language"), self.TRANSLATIONS["zh"])

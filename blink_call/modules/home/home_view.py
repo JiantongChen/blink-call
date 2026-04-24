@@ -97,6 +97,7 @@ class HomeView(QWidget):
         self.exit_btn.setText(i18n["exit"])
 
     def _set_service_mode(self, active: bool):
+        self.setting_btn.setVisible(not active)
         self.exit_btn.setVisible(active)
         self._position_exit_btn()
 
