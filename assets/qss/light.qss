@@ -71,17 +71,60 @@ QLabel#settingTitle {
     color: #111827;
 }
 
-QFrame#settingGeneralGroup,
-QFrame#settingCameraGroup,
-QFrame#settingOtherGroup {
-    background: #e8edf3;
+QFrame#settingLeftNav {
+    background: #ffffff;
     border-radius: 10px;
 }
 
-QLabel#settingSectionTitle {
+QScrollArea#settingLeftScroll,
+QScrollArea#settingRightScroll {
+    background: transparent;
+}
+
+QFrame#settingCenterDivider {
+    background: #e5e7eb;
+    min-width: 1px;
+    max-width: 1px;
+    border: none;
+}
+
+QWidget#settingNavRow {
+    border-radius: 10px;
+}
+
+QWidget#settingNavRow[active="true"] {
+    background: #e5e7eb;
+}
+
+QLabel#settingNavIconSlot {
+    background: #cbd5e1;
+    border-radius: 5px;
+}
+
+QLabel#settingNavIconSlot[active="true"] {
+    background: #9ca3af;
+}
+
+QPushButton#settingNavBtn {
+    min-height: 40px;
+    text-align: left;
+    color: #374151;
     font-size: 16px;
     font-weight: 700;
-    color: #111827;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+}
+
+QWidget#settingNavRow[active="true"] QPushButton#settingNavBtn {
+    color: #1f2937;
+}
+
+QFrame#settingContentPage {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
 }
 
 QLabel#settingSubSectionTitle {
@@ -91,10 +134,12 @@ QLabel#settingSubSectionTitle {
 }
 
 QLabel#settingChooseLabel {
-    color: #374151;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
 }
 
-QFrame#settingSectionDivider {
+QFrame#settingItemDivider {
     background: #c6ced8;
     min-height: 1px;
     max-height: 1px;

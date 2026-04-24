@@ -18,7 +18,7 @@ class HomeViewModel(QObject):
             "remote_error": "远程连接摄像头不可用(状态码: {status_code})。",
             "unknown_error": "发生未知错误。",
             "service_started_faild": "本地摄像头服务启动失败，请确认摄像头可用。",
-            "service_started_success": "服务已启动。请在其他设备选择“远程摄像头”。\nIP: {ip}\nPort: {port}",
+            "service_started_success": "服务已启动，请在其他设备选择“远程摄像头”。\n地址: {ip}\n端口: {port}",
         },
         "en": {
             "local_invalid_camera": "Camera is not available.\nIf a camera exists on this device, please configure it in Settings.",

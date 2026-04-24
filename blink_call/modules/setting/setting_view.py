@@ -1,21 +1,19 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPushButton,
-    QRadioButton,
     QScrollArea,
     QSizePolicy,
-    QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
+from blink_call.modules.setting.subview import build_camera_page, build_general_page, build_other_page
 from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 
@@ -46,109 +44,63 @@ class SettingView(QWidget):
         self.title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         panel_layout.addWidget(self.title_label)
 
-        scroll_area = QScrollArea()
-        scroll_area.setObjectName("settingScrollArea")
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        panel_layout.addWidget(scroll_area, 1)
-
-        scroll_content = QWidget()
-        scroll_content.setObjectName("settingScrollContent")
-        scroll_area.setWidget(scroll_content)
-
-        content_layout = QVBoxLayout(scroll_content)
+        content_layout = QHBoxLayout()
         content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(16)
+        panel_layout.addLayout(content_layout, 1)
 
-        general_group = QFrame()
-        general_group.setObjectName("settingGeneralGroup")
-        content_layout.addWidget(general_group)
+        left_nav_scroll = QScrollArea()
+        left_nav_scroll.setObjectName("settingLeftScroll")
+        left_nav_scroll.setWidgetResizable(True)
+        left_nav_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        left_nav_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        left_nav_scroll.setFixedWidth(160)
+        content_layout.addWidget(left_nav_scroll)
 
-        general_layout = QVBoxLayout(general_group)
-        general_layout.setContentsMargins(16, 16, 16, 16)
-        general_layout.setSpacing(10)
+        left_nav = QFrame()
+        left_nav.setObjectName("settingLeftNav")
+        left_nav_scroll.setWidget(left_nav)
 
-        self.general_title_label = QLabel("General")
-        self.general_title_label.setObjectName("settingSectionTitle")
-        self.general_title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        general_layout.addWidget(self.general_title_label)
+        left_nav_layout = QVBoxLayout(left_nav)
+        left_nav_layout.setContentsMargins(12, 12, 12, 12)
+        left_nav_layout.setSpacing(12)
 
-        general_divider = QFrame()
-        general_divider.setObjectName("settingSectionDivider")
-        general_divider.setFrameShape(QFrame.Shape.HLine)
-        general_layout.addWidget(general_divider)
+        self.general_nav_row, self.general_nav_btn, self.general_nav_icon = self._create_nav_item("General")
+        self.camera_nav_row, self.camera_nav_btn, self.camera_nav_icon = self._create_nav_item("Camera")
+        self.other_nav_row, self.other_nav_btn, self.other_nav_icon = self._create_nav_item("Others")
+        self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.other_nav_row]
+        self.nav_icons = [self.general_nav_icon, self.camera_nav_icon, self.other_nav_icon]
 
-        # General setting : UI language
-        language_row = QHBoxLayout()
-        self.language_label = QLabel("Language")
-        self.language_combo = QComboBox()
-        self.language_combo.addItem("\u4e2d\u6587", "zh")
-        self.language_combo.addItem("English", "en")
-        language_row.addWidget(self.language_label)
-        language_row.addWidget(self.language_combo)
-        language_row.addStretch()
-        general_layout.addLayout(language_row)
+        left_nav_layout.addWidget(self.general_nav_row)
+        left_nav_layout.addWidget(self.camera_nav_row)
+        left_nav_layout.addWidget(self.other_nav_row)
+        left_nav_layout.addStretch()
+
+        nav_group = QButtonGroup(self)
+        nav_group.setExclusive(True)
+        nav_group.addButton(self.general_nav_btn, 0)
+        nav_group.addButton(self.camera_nav_btn, 1)
+        nav_group.addButton(self.other_nav_btn, 2)
+        nav_group.idClicked.connect(self._switch_page)
+
+        vline = QFrame()
+        vline.setObjectName("settingCenterDivider")
+        vline.setFrameShape(QFrame.Shape.VLine)
+        content_layout.addWidget(vline)
+
+        self.content_stack = QStackedWidget()
+        self.content_stack.setObjectName("settingContentStack")
+        content_layout.addWidget(self.content_stack, 1)
+
+        self._attach_widgets(build_general_page(self.content_stack))
+        self._attach_widgets(build_camera_page(self.content_stack))
+        self._attach_widgets(build_other_page(self.content_stack))
+
         self.bind_combo(self.language_combo, "ui.language")
-
-        camera_group = QFrame()
-        camera_group.setObjectName("settingCameraGroup")
-        content_layout.addWidget(camera_group)
-
-        camera_layout = QVBoxLayout(camera_group)
-        camera_layout.setContentsMargins(16, 16, 16, 16)
-        camera_layout.setSpacing(10)
-
-        self.camera_title_label = QLabel("Camera")
-        self.camera_title_label.setObjectName("settingSectionTitle")
-        self.camera_title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        camera_layout.addWidget(self.camera_title_label)
-
-        camera_divider = QFrame()
-        camera_divider.setObjectName("settingSectionDivider")
-        camera_divider.setFrameShape(QFrame.Shape.HLine)
-        camera_layout.addWidget(camera_divider)
-
-        self.choose_label = QLabel("Choose camera source:")
-        self.choose_label.setObjectName("settingChooseLabel")
-        camera_layout.addWidget(self.choose_label)
-
-        self.local_radio = QRadioButton("Local camera")
-        camera_layout.addWidget(self.local_radio)
-
-        local_id_row = QHBoxLayout()
-        local_id_row.addSpacing(24)
-        self.local_id_label = QLabel("ID")
-        self.local_id = QSpinBox()
-        self.local_id.setMinimum(0)
-        self.local_id.setMaximum(20)
-        local_id_row.addWidget(self.local_id_label)
-        local_id_row.addWidget(self.local_id)
-        local_id_row.addStretch()
-        camera_layout.addLayout(local_id_row)
         self.bind_spinbox(self.local_id, "camera.local_camera_id")
-
-        self.remote_radio = QRadioButton("Remote camera")
-        camera_layout.addWidget(self.remote_radio)
-
-        remote_row = QHBoxLayout()
-        remote_row.addSpacing(24)
-        self.remote_ip_label = QLabel("IP")
-        self.remote_ip = QLineEdit()
-        self.remote_ip.setPlaceholderText("IP")
-        self.remote_port_label = QLabel("Port")
-        self.remote_port = QSpinBox()
-        self.remote_port.setMinimum(1)
-        self.remote_port.setMaximum(65535)
-        self.remote_ip.setFixedWidth(220)
-        self.remote_port.setFixedWidth(220)
-        remote_row.addWidget(self.remote_ip_label)
-        remote_row.addWidget(self.remote_ip)
-        remote_row.addWidget(self.remote_port_label)
-        remote_row.addWidget(self.remote_port)
-        remote_row.addStretch()
-        camera_layout.addLayout(remote_row)
         self.bind_line_edit(self.remote_ip, "camera.remote.ip")
         self.bind_spinbox(self.remote_port, "camera.remote.port")
+        self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
+        self.bind_spinbox(self.service_port, "local_service.port")
 
         radio_group = QButtonGroup(self)
         radio_group.addButton(self.local_radio)
@@ -156,68 +108,6 @@ class SettingView(QWidget):
         self.local_radio.setProperty("tag_value", "local")
         self.remote_radio.setProperty("tag_value", "remote")
         self.bind_radio_group(radio_group, "camera.mode")
-
-        other_group = QFrame()
-        other_group.setObjectName("settingOtherGroup")
-        content_layout.addWidget(other_group)
-
-        other_layout = QVBoxLayout(other_group)
-        other_layout.setContentsMargins(16, 16, 16, 16)
-        other_layout.setSpacing(10)
-
-        self.other_title_label = QLabel("Other settings")
-        self.other_title_label.setObjectName("settingSectionTitle")
-        self.other_title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        other_layout.addWidget(self.other_title_label)
-
-        other_divider = QFrame()
-        other_divider.setObjectName("settingSectionDivider")
-        other_divider.setFrameShape(QFrame.Shape.HLine)
-        other_layout.addWidget(other_divider)
-
-        self.service_section_label = QLabel("Start local camera service only")
-        self.service_section_label.setObjectName("settingSubSectionTitle")
-        other_layout.addWidget(self.service_section_label)
-
-        service_cfg_row = QHBoxLayout()
-        service_cfg_row.addSpacing(24)
-        self.service_id_label = QLabel("Service ID")
-        self.service_camera_id = QSpinBox()
-        self.service_camera_id.setMinimum(0)
-        self.service_camera_id.setMaximum(20)
-        self.service_camera_id.setFixedWidth(120)
-        self.service_port_label = QLabel("Service Port")
-        self.service_port = QSpinBox()
-        self.service_port.setMinimum(1)
-        self.service_port.setMaximum(65535)
-        self.service_port.setFixedWidth(120)
-        service_cfg_row.addWidget(self.service_id_label)
-        service_cfg_row.addWidget(self.service_camera_id)
-        service_cfg_row.addWidget(self.service_port_label)
-        service_cfg_row.addWidget(self.service_port)
-        service_cfg_row.addStretch()
-        other_layout.addLayout(service_cfg_row)
-        self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
-        self.bind_spinbox(self.service_port, "local_service.port")
-
-        start_btn_row = QHBoxLayout()
-        start_btn_row.addSpacing(24)
-        self.start_service_btn = QPushButton("Start local camera service only")
-        self.start_service_btn.setObjectName("settingStartServiceBtn")
-        start_btn_row.addWidget(self.start_service_btn)
-        start_btn_row.addStretch()
-        other_layout.addLayout(start_btn_row)
-
-        other_layout.addSpacing(14)
-
-        reset_btn_row = QHBoxLayout()
-        self.reset_btn = QPushButton("Restore defaults")
-        self.reset_btn.setObjectName("settingResetBtn")
-        reset_btn_row.addWidget(self.reset_btn)
-        reset_btn_row.addStretch()
-        other_layout.addLayout(reset_btn_row)
-
-        content_layout.addStretch()
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -234,14 +124,64 @@ class SettingView(QWidget):
         self.start_service_btn.clicked.connect(self._start_service)
         self.vm.close_requested.connect(self.hide)
 
+        self.general_nav_btn.setChecked(True)
+        self.content_stack.setCurrentIndex(0)
+        self._update_nav_styles(0)
         self.refresh_from_model()
+
+    def _create_nav_item(self, text: str):
+        row = QWidget()
+        row.setObjectName("settingNavRow")
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(10, 10, 10, 10)
+        row_layout.setSpacing(10)
+
+        icon_slot = QLabel()
+        icon_slot.setObjectName("settingNavIconSlot")
+        icon_slot.setFixedSize(18, 18)
+        row_layout.addWidget(icon_slot)
+
+        btn = QPushButton(text)
+        btn.setObjectName("settingNavBtn")
+        btn.setCheckable(True)
+        btn.setFlat(True)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        row_layout.addWidget(btn)
+        return row, btn, icon_slot
+
+    def _attach_widgets(self, page_widgets):
+        for key, value in vars(page_widgets).items():
+            setattr(self, key, value)
+
+    def _switch_page(self, page_index: int):
+        self.content_stack.setCurrentIndex(page_index)
+        self._update_nav_styles(page_index)
+
+    def _update_nav_styles(self, page_index: int):
+        for idx, row in enumerate(self.nav_rows):
+            row.setProperty("active", idx == page_index)
+            row.style().unpolish(row)
+            row.style().polish(row)
+
+        for idx, icon in enumerate(self.nav_icons):
+            icon.setProperty("active", idx == page_index)
+            icon.style().unpolish(icon)
+            icon.style().polish(icon)
 
     def bind_radio_group(self, group, path):
         def on_changed(btn):
             value = btn.property("tag_value")
             self.vm.set_config(path, value)
+            if path == "camera.mode":
+                self._update_camera_mode_visibility(value)
 
         group.buttonClicked.connect(on_changed)
+
+    def _update_camera_mode_visibility(self, mode: str):
+        is_local = mode != "remote"
+        self.local_row.setVisible(is_local)
+        self.remote_row.setVisible(not is_local)
 
     def bind_line_edit(self, edit, path: str):
         def on_changed(text):
@@ -270,8 +210,10 @@ class SettingView(QWidget):
 
         if self.vm.get_config("camera.mode") == "remote":
             self.remote_radio.setChecked(True)
+            self._update_camera_mode_visibility("remote")
         else:
             self.local_radio.setChecked(True)
+            self._update_camera_mode_visibility("local")
 
         self.local_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
@@ -284,20 +226,30 @@ class SettingView(QWidget):
         i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
 
         self.title_label.setText(i18n["title"])
-        self.general_title_label.setText(i18n["general_title"])
+        self.general_nav_btn.setText(i18n["general_title"])
+        self.camera_nav_btn.setText(i18n["camera_title"])
+        self.other_nav_btn.setText(i18n["other_title"])
+
         self.language_label.setText(i18n["language"])
-        self.camera_title_label.setText(i18n["camera_title"])
+
         self.choose_label.setText(i18n["choose_label"])
         self.local_radio.setText(i18n["local_radio"])
         self.remote_radio.setText(i18n["remote_radio"])
+        self.local_id_label.setText(i18n["local_id_label"])
+        self.remote_title_label.setText(i18n["remote_address_label"])
+        self.remote_ip_label.setText(i18n["ip_label"])
+        self.remote_port_label.setText(i18n["port_label"])
+        self.start_service_btn.setText(i18n["start_service_btn"])
+        self.start_service_label.setText(i18n["service_section_title"])
+        self.service_section_label.setText(i18n["remote_camera_service_config"])
+        self.service_id_label.setText(i18n["local_id_label"])
+        self.service_port_label.setText(i18n["port_label"])
+
+        self.reset_btn.setText(i18n["reset_btn"])
+        self.reset_label.setText(i18n["reset_btn"])
+
         self.save_btn.setText(i18n["save_btn"])
         self.close_btn.setText(i18n["close_btn"])
-        self.other_title_label.setText(i18n["other_title"])
-        self.reset_btn.setText(i18n["reset_btn"])
-        self.start_service_btn.setText(i18n["start_service_btn"])
-        self.service_section_label.setText(i18n["service_section_title"])
-        self.service_id_label.setText(i18n["service_id"])
-        self.service_port_label.setText(i18n["service_port"])
 
     def _start_service(self):
         self.vm.start_local_service_only()
