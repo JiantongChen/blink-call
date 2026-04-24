@@ -46,21 +46,22 @@ class LocalCameraCapture:
     def _capture_loop(self):
         while self.running and self.cap is not None:
             ok, frame = self.cap.read()
-            if ok and frame is not None:
-                with self._lock:
-                    self.latest_frame = frame
-            else:
+            if not ok or frame is None:
                 self.camera_found = False
-            time.sleep(self.interval)
+                frame = None
 
-    def read_latest_frame(self):
-        with self._lock:
-            if self.latest_frame is None:
-                return None
-            return self.latest_frame.copy()
+            with self._lock:
+                self.latest_frame = frame
+            time.sleep(self.interval)
 
     def stop(self):
         self.running = False
         if self.cap is not None:
             self.cap.release()
             self.cap = None
+
+    def read_latest_frame(self):
+        with self._lock:
+            if self.latest_frame is None:
+                return None
+            return self.latest_frame.copy()

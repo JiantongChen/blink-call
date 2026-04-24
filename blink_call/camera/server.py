@@ -27,21 +27,20 @@ class LocalCameraFrameServer:
                 return (
                     jsonify(
                         {
-                            "status": "camera_not_found",
-                            "message": "camera does not exist",
+                            "message": "Camera does not exist.",
                             "camera_id": self.camera_id,
                         }
                     ),
-                    404,
+                    599,
                 )
 
             latest = self.capture.read_latest_frame()
             if latest is None:
-                return jsonify({"status": "camera_not_ready"}), 503
+                return jsonify({"message": "Frame is None."}), 598
 
             ok, buffer = cv2.imencode(".jpg", latest)
             if not ok:
-                return jsonify({"status": "encode_failed"}), 500
+                return jsonify({"message": "Encode failed."}), 597
 
             return Response(buffer.tobytes(), mimetype="image/jpeg")
 

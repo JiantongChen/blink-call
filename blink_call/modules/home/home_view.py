@@ -10,12 +10,10 @@ from blink_call.modules.setting.setting_view import SettingView
 class HomeView(QWidget):
     TEXTS = {
         "zh": {
-            "no_camera": "\u672a\u68c0\u6d4b\u5230\u53ef\u7528\u6444\u50cf\u5934\uff0c\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e",
-            "settings": "\u8bbe\u7f6e",
-            "exit": "\u9000\u51fa",
+            "settings": "设置",
+            "exit": "退出",
         },
         "en": {
-            "no_camera": "No available camera detected. Please configure it in Settings.",
             "settings": "Settings",
             "exit": "Exit",
         },
@@ -33,7 +31,7 @@ class HomeView(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.video_label = QLabel(i18n["no_camera"])
+        self.video_label = QLabel()
         self.video_label.setObjectName("homeVideoLabel")
         self.video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.video_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
@@ -54,7 +52,7 @@ class HomeView(QWidget):
         self.exit_btn.setObjectName("homeExitBtn")
         self.exit_btn.setFixedSize(156, 48)
         self.exit_btn.setVisible(False)
-        self.exit_btn.clicked.connect(self.vm.exit_local_service_mode)
+        self.exit_btn.clicked.connect(self.vm.on_page_enter)
 
         self.vm.frame_ready.connect(self._show_frame)
         self.vm.status_changed.connect(self._show_status)

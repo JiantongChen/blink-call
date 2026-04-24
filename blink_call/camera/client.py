@@ -8,12 +8,7 @@ import numpy as np
 
 
 class RemoteCameraClient:
-    STATUS_CONNECTING = "connecting"
-    STATUS_OK = "ok"
-    STATUS_CAMERA_NOT_FOUND = "remote_camera_not_found"
-    STATUS_CANNOT_CONNECT = "cannot_connect"
-
-    def __init__(self, ip: str, port: int, timeout: float = 3, interval: float = 0.03):
+    def __init__(self, ip: str, port: int, timeout: float = 5, interval: float = 0.03):
         self.ip = ip
         self.port = port
         self.timeout = timeout
@@ -21,7 +16,7 @@ class RemoteCameraClient:
 
         self.running = False
         self.latest_frame = None
-        self.status = self.STATUS_CONNECTING
+        self.status_code = 0
 
         self._lock = threading.Lock()
         self._thread = None
@@ -29,6 +24,11 @@ class RemoteCameraClient:
     @property
     def frame_url(self):
         return f"http://{self.ip}:{self.port}/frame"
+
+    def set_response(self, status_code, frame):
+        self.status_code = status_code
+        with self._lock:
+            self.latest_frame = frame
 
     def start(self):
         if self.running:
@@ -49,44 +49,31 @@ class RemoteCameraClient:
                     payload = resp.read()
 
                 if "image/jpeg" not in content_type:
-                    self._set_status(self.STATUS_CAMERA_NOT_FOUND)
-                    self._set_frame(None)
+                    self.set_response(499, None)
                     continue
 
                 image_data = np.frombuffer(payload, dtype=np.uint8)
                 frame = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
                 if frame is None:
-                    self._set_status(self.STATUS_CAMERA_NOT_FOUND)
-                    self._set_frame(None)
+                    self.set_response(498, None)
                 else:
-                    self._set_frame(frame)
-                    self._set_status(self.STATUS_OK)
+                    self.set_response(200, frame)
             except urllib.error.HTTPError as exc:
-                if exc.code == 404:
-                    self._set_status(self.STATUS_CAMERA_NOT_FOUND)
-                    self._set_frame(None)
-                else:
-                    self._set_status(self.STATUS_CANNOT_CONNECT)
-                    self._set_frame(None)
-            except (urllib.error.URLError, TimeoutError, OSError):
-                self._set_status(self.STATUS_CANNOT_CONNECT)
-                self._set_frame(None)
+                self.set_response(exc.code, None)
+            except urllib.error.URLError:
+                self.set_response(-1, None)
+            except TimeoutError:
+                self.set_response(-2, None)
+            except OSError:
+                self.set_response(-3, None)
+            except Exception:
+                self.set_response(-999, None)
 
-    def _set_frame(self, frame):
-        with self._lock:
-            self.latest_frame = frame
-
-    def _set_status(self, status):
-        self.status = status
+    def stop(self):
+        self.running = False
 
     def read_latest_frame(self):
         with self._lock:
             if self.latest_frame is None:
                 return None
             return self.latest_frame.copy()
-
-    def get_status(self):
-        return self.status
-
-    def stop(self):
-        self.running = False
