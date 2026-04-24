@@ -2,108 +2,101 @@ import cv2
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtGui import QImage
 
-from blink_call.modules.setting import SettingModel, SettingViewModel
+from blink_call.modules.home.home_model import HomeModel
+from blink_call.modules.setting.setting_model import SettingModel
+from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 
 
 class HomeViewModel(QObject):
     frame_ready = Signal(QImage)
     status_changed = Signal(str)
-    show_settings_requested = Signal()
-    language_changed = Signal(str)
     local_service_active_changed = Signal(bool)
 
     STATUS_TEXTS = {
         "zh": {
-            "service_running": "\u6444\u50cf\u5934\u670d\u52a1\u5df2\u542f\u52a8\uff0c\u5f53\u524d\u9875\u9762\u4ec5\u663e\u793a\u670d\u52a1\u72b6\u6001\u3002",
-            "remote_mode": "\u5f53\u524d\u4e3a\u8fdc\u7a0b\u6444\u50cf\u5934\u6a21\u5f0f\uff0c\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u586b\u5199 IP \u548c Port\u3002",
-            "no_camera": "\u672a\u68c0\u6d4b\u5230\u53ef\u7528\u6444\u50cf\u5934\uff0c\u8bf7\u5728\u8bbe\u7f6e\u4e2d\u914d\u7f6e\u3002",
-            "service_started": "\u670d\u52a1\u5df2\u542f\u52a8\u3002\u8bf7\u5728\u5176\u4ed6\u8bbe\u5907\u9009\u62e9\u201c\u8fdc\u7a0b\u6444\u50cf\u5934\u201d\u3002\nIP: {ip}\nPort: {port}",
+            "service_running": "摄像头服务已启动，当前页面仅显示服务状态。",
+            "remote_mode": "当前为远程摄像头模式，请在设置中填写 IP 和 Port。",
+            "no_camera": "未检测到可用摄像头，请在设置中配置。",
+            "remote_camera_not_found": "远程摄像头不存在。",
+            "cannot_connect": "无法连接远程摄像头服务。",
+            "service_started": "服务已启动。请在其他设备选择“远程摄像头”。\nIP: {ip}\nPort: {port}",
         },
         "en": {
             "service_running": "Camera service is running. This page shows service status only.",
             "remote_mode": "Remote camera mode is active. Set IP and port in Settings.",
             "no_camera": "No available camera detected. Please configure it in Settings.",
+            "remote_camera_not_found": "Remote camera not found.",
+            "cannot_connect": "Unable to connect to remote camera service.",
             "service_started": 'Service started. On another device choose "Remote Camera".\nIP: {ip}\nPort: {port}',
         },
     }
 
-    def __init__(self, model):
+    def __init__(self, model: HomeModel):
         super().__init__()
         self.model = model
 
-        (
-            self.camera_mode,
-            self.local_camera_id,
-            self.remote_ip,
-            self.remote_port,
-        ) = self.model.load_camera_config()
-        self.service_camera_id, self.service_port = self.model.load_local_service_config()
-        self.ui_language = self.model.load_ui_language()
-
         self.setting_model = SettingModel()
-        self.setting_model.set_language(self.ui_language)
-        self.setting_model.set_camera_config(
-            self.camera_mode,
-            self.local_camera_id if self.local_camera_id is not None else 0,
-            self.remote_ip,
-            self.remote_port,
-        )
-        self.setting_model.set_service_config(self.service_camera_id, self.service_port)
-        self.setting_vm = SettingViewModel(
-            self.setting_model,
-            self.apply_camera_config,
-            self.save_local_service_config,
-            self.start_local_camera_service,
-            self.restore_default_config,
-            self.change_language,
-        )
+        self.setting_vm = SettingViewModel(self.setting_model)
+        self.setting_vm.save_setting.connect(self.on_page_enter)
+        self.setting_vm.start_local_service.connect(self.start_local_camera_service)
 
         self.timer = QTimer(self)
         self.timer.setInterval(33)
         self.timer.timeout.connect(self._update_frame)
-        self._last_status_key = None
-        self._last_status_params = {}
 
     def _t(self, key):
-        return self.STATUS_TEXTS.get(self.ui_language, self.STATUS_TEXTS["zh"])[key]
+        return self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
 
     def _emit_status(self, key, **params):
-        self._last_status_key = key
-        self._last_status_params = params
         self.status_changed.emit(self._t(key).format(**params))
 
     def on_page_enter(self):
         self._start_home_camera()
 
     def _start_home_camera(self):
-        if self.model.service_server is not None:
-            self.timer.stop()
-            self.local_service_active_changed.emit(True)
-            self._emit_status("service_running")
+        self.model.stop_local_camera_service()
+
+        if self.setting_model.get_config("camera.mode") == "local":
+            local_camera_id = self.setting_vm.get_config("camera.local_camera_id")
+            ok = self.model.start_local_capture(local_camera_id)
+            if not ok:
+                self.timer.stop()
+                self.local_service_active_changed.emit(False)
+                self._emit_status("no_camera")
+                return
+
+            self.local_service_active_changed.emit(False)
+            self.timer.start()
             return
 
-        if self.camera_mode != "local":
-            self.timer.stop()
+        if self.setting_model.get_config("camera.mode") == "remote":
+            remote_ip = self.setting_vm.get_config("camera.remote.ip")
+            remote_port = self.setting_vm.get_config("camera.remote.port")
+            ok = self.model.start_remote_capture(remote_ip, remote_port)
+            if not ok:
+                self.timer.stop()
+                self.local_service_active_changed.emit(False)
+                self._emit_status("cannot_connect")
+                return
+
             self.local_service_active_changed.emit(False)
+            self.timer.start()
             self._emit_status("remote_mode")
             return
 
-        ok = self.model.open_camera(self.local_camera_id)
-        if not ok:
-            self.timer.stop()
-            self.local_service_active_changed.emit(False)
-            self._emit_status("no_camera")
-            return
-
+        self.timer.stop()
         self.local_service_active_changed.emit(False)
-        self.timer.start()
 
     def _update_frame(self):
         frame = self.model.read_frame()
         if frame is None:
-            self.timer.stop()
-            self.local_service_active_changed.emit(False)
-            self._emit_status("no_camera")
+            status = self.model.get_status()
+            if status == "remote_camera_not_found":
+                self._emit_status("remote_camera_not_found")
+            elif status == "cannot_connect":
+                self._emit_status("cannot_connect")
+            else:
+                self._emit_status("no_camera")
             return
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -111,37 +104,9 @@ class HomeViewModel(QObject):
         image = QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888).copy()
         self.frame_ready.emit(image)
 
-    def open_settings(self):
-        self.show_settings_requested.emit()
-
-    def apply_camera_config(self, mode, local_camera_id, remote_ip, remote_port):
-        self.camera_mode = mode
-        self.local_camera_id = local_camera_id if mode == "local" else None
-        self.remote_ip = remote_ip
-        self.remote_port = int(remote_port)
-
-        self.setting_model.set_camera_config(
-            mode,
-            local_camera_id,
-            remote_ip,
-            self.remote_port,
-        )
-        self.model.save_camera_config(
-            self.camera_mode,
-            self.local_camera_id,
-            self.remote_ip,
-            self.remote_port,
-        )
-        self._start_home_camera()
-
-    def save_local_service_config(self, camera_id, port):
-        self.service_camera_id = int(camera_id)
-        self.service_port = int(port)
-        self.setting_model.set_service_config(self.service_camera_id, self.service_port)
-        self.model.save_local_service_config(self.service_camera_id, self.service_port)
-
-    def start_local_camera_service(self, local_camera_id, service_port):
-        self.save_local_service_config(local_camera_id, service_port)
+    def start_local_camera_service(self):
+        local_camera_id = self.setting_vm.get("local_service.camera_id", source="temp")
+        service_port = self.setting_vm.get("local_service.port", source="temp")
         ok, ip, port = self.model.start_local_camera_service(local_camera_id, service_port)
         self.timer.stop()
 
@@ -152,35 +117,6 @@ class HomeViewModel(QObject):
 
         self.local_service_active_changed.emit(True)
         self._emit_status("service_started", ip=ip, port=port)
-
-    def restore_default_config(self):
-        self.model.reset_camera_config_to_default()
-        (
-            self.camera_mode,
-            self.local_camera_id,
-            self.remote_ip,
-            self.remote_port,
-        ) = self.model.load_camera_config()
-        self.service_camera_id, self.service_port = self.model.load_local_service_config()
-        self.ui_language = self.model.load_ui_language()
-
-        self.setting_model.set_language(self.ui_language)
-        self.setting_model.set_camera_config(
-            self.camera_mode,
-            self.local_camera_id if self.local_camera_id is not None else 0,
-            self.remote_ip,
-            self.remote_port,
-        )
-        self.setting_model.set_service_config(self.service_camera_id, self.service_port)
-        self._start_home_camera()
-
-    def change_language(self, language):
-        self.ui_language = language
-        self.setting_model.set_language(language)
-        self.model.save_ui_language(language)
-        self.language_changed.emit(language)
-        if not self.timer.isActive() and self._last_status_key:
-            self._emit_status(self._last_status_key, **self._last_status_params)
 
     def exit_local_service_mode(self):
         self.model.stop_local_camera_service()

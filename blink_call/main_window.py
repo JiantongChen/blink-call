@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QStackedWidget, QVBoxLayout, QWidget
 
-from blink_call.utils.helper import Helper
+from blink_call.core.config_manager import ConfigManager
 
 
 class MainWindow(QWidget):
@@ -25,8 +25,8 @@ class MainWindow(QWidget):
 
     @staticmethod
     def _load_ui_language():
-        local_ui = (Helper.get_local_config().get("ui") or {})
-        default_ui = (Helper.get_default_config().get("ui") or {})
+        local_ui = ConfigManager.get_local_config().get("ui") or {}
+        default_ui = ConfigManager.get_default_config().get("ui") or {}
         return local_ui.get("language", default_ui.get("language", "zh"))
 
     def set_ui_language(self, language):

@@ -38,7 +38,7 @@ def create_app():
 
     # Add pages
     create_page("home", main_window, nav)
-    DI.get("home_vm").language_changed.connect(main_window.set_ui_language)
+    DI.get("home_vm").setting_vm.language_changed.connect(main_window.set_ui_language)
 
     # Default page
     nav.to("home")

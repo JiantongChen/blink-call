@@ -1,22 +1,36 @@
+from copy import deepcopy
+
+from blink_call.core.config_manager import ConfigManager
+
+
 class SettingModel:
     def __init__(self):
-        self.language = "zh"
-        self.camera_mode = "local"
-        self.local_camera_id = 0
-        self.remote_ip = ""
-        self.remote_port = 10000
-        self.service_camera_id = 0
-        self.service_port = 10000
+        self.local_config = None
+        self.temp_config = None
+        self.update_config_from_file()
 
-    def set_language(self, language):
-        self.language = language
+    def update_config_from_file(self):
+        self.local_config = ConfigManager.get_local_config()
+        self.temp_config = deepcopy(self.local_config)
 
-    def set_camera_config(self, mode, local_camera_id, remote_ip, remote_port):
-        self.camera_mode = mode
-        self.local_camera_id = local_camera_id
-        self.remote_ip = remote_ip
-        self.remote_port = remote_port
+    def save_config(self):
+        ConfigManager.update_local_config(self.temp_config)
+        self.update_config_from_file()
 
-    def set_service_config(self, camera_id, port):
-        self.service_camera_id = camera_id
-        self.service_port = port
+    def restore_default_config(self):
+        ConfigManager.reset_local_config_to_default()
+        self.update_config_from_file()
+
+    def get_config(self, path: str, source: str = "local"):
+        keys = path.split(".")
+        data = self.local_config if source == "local" else self.temp_config
+        for k in keys:
+            data = data[k]
+        return data
+
+    def set_config(self, path: str, value):
+        keys = path.split(".")
+        data = self.temp_config
+        for k in keys[:-1]:
+            data = data.setdefault(k, {})
+        data[keys[-1]] = value

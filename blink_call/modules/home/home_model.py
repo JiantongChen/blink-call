@@ -1,142 +1,127 @@
-import threading
+from enum import Enum
 from typing import Optional
 
-from blink_call.camer_server.start_server import BlinkCameraServer
+from blink_call.camera.client import RemoteCameraClient
+from blink_call.camera.local_capture import LocalCameraCapture
+from blink_call.camera.server import LocalCameraFrameServer
 from blink_call.utils.helper import Helper
+
+
+class Status(Enum):
+    OK = "ok"
+    NO_CAMERA = "no_camera"
+    REMOTE_CAMERA_NOT_FOUND = "remote_camera_not_found"
+    CANNOT_CONNECT = "cannot_connect"
+
+
+class Mode(Enum):
+    NONE = "none"
+    LOCAL = "local"
+    REMOTE = "remote"
+    SERVER = "server"
 
 
 class HomeModel:
     def __init__(self):
-        self.capture = None
-        self.camera_id = None
-        self.service_server = None
-        self.service_thread = None
+        self.local_capture: Optional[LocalCameraCapture] = None
+        self.remote_client: Optional[RemoteCameraClient] = None
+        self.service_server: Optional[LocalCameraFrameServer] = None
 
-    def load_camera_config(self):
-        default_camera_cfg = (Helper.get_default_config().get("camera") or {})
-        default_remote_cfg = default_camera_cfg.get("remote") or {}
+        self.active_mode = Mode.NONE
+        self._status = Status.OK
 
-        local_config = Helper.get_local_config()
-        camera_cfg = local_config.get("camera") or {}
-        remote_cfg = camera_cfg.get("remote") or {}
+    def _stop_active_sources(self):
+        if self.local_capture is not None:
+            self.local_capture.stop()
+            self.local_capture = None
 
-        mode = camera_cfg.get("mode", default_camera_cfg.get("mode", "local"))
-        local_camera_id = camera_cfg.get(
-            "local_camera_id",
-            default_camera_cfg.get("local_camera_id"),
-        )
-        remote_ip = remote_cfg.get("ip", default_remote_cfg.get("ip", ""))
-        remote_port = remote_cfg.get(
-            "port",
-            default_remote_cfg.get("port", 10000),
-        )
-        try:
-            remote_port = int(remote_port)
-        except (TypeError, ValueError):
-            remote_port = int(default_remote_cfg.get("port", 10000))
+        if self.remote_client is not None:
+            self.remote_client.stop()
+            self.remote_client = None
 
-        return mode, local_camera_id, remote_ip, remote_port
+        if self.service_server is not None:
+            self.service_server.stop()
+            self.service_server = None
 
-    def load_ui_language(self):
-        default_ui_cfg = (Helper.get_default_config().get("ui") or {})
-        local_ui_cfg = (Helper.get_local_config().get("ui") or {})
-        return local_ui_cfg.get("language", default_ui_cfg.get("language", "zh"))
+        self.active_mode = Mode.NONE
 
-    def load_local_service_config(self):
-        default_service_cfg = (Helper.get_default_config().get("local_service") or {})
-        local_service_cfg = (Helper.get_local_config().get("local_service") or {})
-        camera_id = local_service_cfg.get("camera_id", default_service_cfg.get("camera_id", 0))
-        port = local_service_cfg.get("port", default_service_cfg.get("port", 10000))
-        try:
-            camera_id = int(camera_id)
-        except (TypeError, ValueError):
-            camera_id = int(default_service_cfg.get("camera_id", 0))
-        try:
-            port = int(port)
-        except (TypeError, ValueError):
-            port = int(default_service_cfg.get("port", 10000))
-        return camera_id, port
+    def start_local_capture(self, camera_id: int):
+        self._stop_active_sources()
 
-    def save_camera_config(self, mode, local_camera_id, remote_ip, remote_port):
-        Helper.update_local_config(
-            {
-                "camera": {
-                    "mode": mode,
-                    "local_camera_id": local_camera_id if mode == "local" else None,
-                    "remote": {
-                        "ip": remote_ip,
-                        "port": int(remote_port),
-                    },
-                }
-            }
-        )
-
-    def save_ui_language(self, language):
-        Helper.update_local_config({"ui": {"language": language}})
-
-    def save_local_service_config(self, camera_id, port):
-        Helper.update_local_config(
-            {
-                "local_service": {
-                    "camera_id": int(camera_id),
-                    "port": int(port),
-                }
-            }
-        )
-
-    def reset_camera_config_to_default(self):
-        Helper.reset_local_config_to_default()
-        return self.load_camera_config()
-
-    def open_camera(self, camera_id: Optional[int]):
-        self.release_camera()
-
-        cap, camera_id = BlinkCameraServer.open_camera(camera_index=camera_id)
-        if cap is None:
+        capture = LocalCameraCapture(camera_id)
+        ok = capture.start()
+        if not ok:
+            self._status = Status.NO_CAMERA
             return False
 
-        self.capture = cap
-        self.camera_id = camera_id
+        self.local_capture = capture
+        self._status = Status.OK
         return True
 
-    def read_frame(self):
-        if self.capture is None:
-            return None
+    def start_remote_capture(self, remote_ip: str, remote_port: int):
+        self._stop_active_sources()
 
-        ok, frame = self.capture.read()
+        client = RemoteCameraClient(remote_ip, int(remote_port))
+        client.start()
+
+        self.remote_client = client
+        self._status = Status.OK
+        return True
+
+    def start_local_camera_service(self, camera_id: int, port: int):
+        self._stop_active_sources()
+
+        service_port = Helper.get_available_port(port)
+        server = LocalCameraFrameServer(
+            camera_id=camera_id,
+            port=service_port,
+        )
+        ok = server.start()
         if not ok:
-            return None
-
-        return frame
-
-    def release_camera(self):
-        if self.capture is not None:
-            self.capture.release()
-            self.capture = None
-
-    def start_local_camera_service(self, camera_id: Optional[int], port: Optional[int]):
-        if self.service_server is not None:
-            return True, BlinkCameraServer.get_local_ip(), self.service_server.port
-
-        self.release_camera()
-
-        server = BlinkCameraServer(camera_index=camera_id, port=port)
-        if not server.camera_available():
+            self._status = Status.NO_CAMERA
             return False, None, None
 
-        thread = threading.Thread(target=server.run, daemon=True)
-        thread.start()
-
         self.service_server = server
-        self.service_thread = thread
-
-        return True, BlinkCameraServer.get_local_ip(), server.port
+        self._status = Status.OK
+        return True, Helper.get_local_ip(), service_port
 
     def stop_local_camera_service(self):
-        if self.service_server is None:
-            return
-        if self.service_server.cap is not None:
-            self.service_server.cap.release()
-            self.service_server.cap = None
-        self.service_server = None
-        self.service_thread = None
+        if self.service_server is not None:
+            self.service_server.stop()
+            self.service_server = None
+
+        if self.active_mode == Mode.SERVER:
+            self.active_mode = Mode.NONE
+
+    def read_frame(self):
+        if self.active_mode == Mode.LOCAL and self.local_capture is not None:
+            frame = self.local_capture.read_latest_frame()
+            if frame is None:
+                self._status = Status.NO_CAMERA
+                return None
+
+            self._status = Status.OK
+            return frame
+
+        if self.active_mode == Mode.REMOTE and self.remote_client is not None:
+            status = self.remote_client.get_status()
+            frame = self.remote_client.read_latest_frame()
+            if frame is None:
+                if status == RemoteCameraClient.STATUS_CAMERA_NOT_FOUND:
+                    self._status = Status.REMOTE_CAMERA_NOT_FOUND
+                elif status in (
+                    RemoteCameraClient.Status.CANNOT_CONNECT,
+                    RemoteCameraClient.STATUS_CONNECTING,
+                ):
+                    self._status = Status.CANNOT_CONNECT
+                else:
+                    self._status = Status.CANNOT_CONNECT
+                return None
+
+            self._status = Status.OK
+            return frame
+
+        return None
+
+    def get_status(self):
+        return self._status

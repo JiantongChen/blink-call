@@ -9,69 +9,23 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QScrollArea,
     QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
+from blink_call.modules.setting.setting_i18n import SETTING_I18N
+from blink_call.modules.setting.setting_viewmodel import SettingViewModel
+
 
 class SettingView(QWidget):
     popup_closed = Signal()
-    TRANSLATIONS = {
-        "zh": {
-            "title": "\u8bbe\u7f6e",
-            "general_title": "\u901a\u7528\u8bbe\u7f6e",
-            "language": "\u8bed\u8a00",
-            "camera_title": "\u6444\u50cf\u5934",
-            "choose_label": "\u8bf7\u9009\u62e9\u6444\u50cf\u5934\u6765\u6e90\uff1a",
-            "local_radio": "\u672c\u5730\u6444\u50cf\u5934",
-            "remote_radio": "\u8fdc\u7a0b\u6444\u50cf\u5934",
-            "save_btn": "\u4fdd\u5b58\u8bbe\u7f6e",
-            "close_btn": "\u5173\u95ed",
-            "other_title": "\u5176\u4ed6\u8bbe\u7f6e",
-            "reset_btn": "\u6062\u590d\u9ed8\u8ba4\u8bbe\u7f6e",
-            "start_service_btn": "\u5355\u72ec\u542f\u52a8\u672c\u5730\u6444\u50cf\u5934\u670d\u52a1",
-            "service_section_title": "\u5355\u72ec\u542f\u52a8\u672c\u5730\u6444\u50cf\u5934\u670d\u52a1",
-            "service_id": "\u670d\u52a1 ID",
-            "service_port": "\u670d\u52a1 Port",
-            "unsaved_title": "\u672a\u4fdd\u5b58\u7684\u8bbe\u7f6e",
-            "unsaved_msg": "\u53d1\u73b0\u6709\u672a\u4fdd\u5b58\u7684\u8bbe\u7f6e\uff0c\u662f\u5426\u4fdd\u5b58\uff1f",
-            "confirm_reset_title": "\u6062\u590d\u9ed8\u8ba4\u8bbe\u7f6e",
-            "confirm_reset_msg": "\u786e\u5b9a\u8981\u6062\u590d\u9ed8\u8ba4\u8bbe\u7f6e\u5417\uff1f",
-            "confirm_btn": "\u786e\u5b9a",
-        },
-        "en": {
-            "title": "Settings",
-            "general_title": "General",
-            "language": "Language",
-            "camera_title": "Camera",
-            "choose_label": "Choose camera source:",
-            "local_radio": "Local camera",
-            "remote_radio": "Remote camera",
-            "save_btn": "Save settings",
-            "close_btn": "Close",
-            "other_title": "Other settings",
-            "reset_btn": "Restore defaults",
-            "start_service_btn": "Start local camera service only",
-            "service_section_title": "Start local camera service only",
-            "service_id": "Service ID",
-            "service_port": "Service Port",
-            "unsaved_title": "Unsaved settings",
-            "unsaved_msg": "There are unsaved changes. Save before closing?",
-            "confirm_reset_title": "Restore defaults",
-            "confirm_reset_msg": "Are you sure to restore default settings?",
-            "confirm_btn": "Confirm",
-        },
-    }
 
-    def __init__(self, vm, parent=None):
+    def __init__(self, vm: SettingViewModel, parent=None):
         super().__init__(parent)
         self.vm = vm
-        self.setVisible(False)
-        self.panel = None
-        self.current_language = "zh"
-        self._saved_camera_state = {}
 
         self.setObjectName("settingOverlay")
 
@@ -92,9 +46,23 @@ class SettingView(QWidget):
         self.title_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         panel_layout.addWidget(self.title_label)
 
+        scroll_area = QScrollArea()
+        scroll_area.setObjectName("settingScrollArea")
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        panel_layout.addWidget(scroll_area, 1)
+
+        scroll_content = QWidget()
+        scroll_content.setObjectName("settingScrollContent")
+        scroll_area.setWidget(scroll_content)
+
+        content_layout = QVBoxLayout(scroll_content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(16)
+
         general_group = QFrame()
         general_group.setObjectName("settingGeneralGroup")
-        panel_layout.addWidget(general_group)
+        content_layout.addWidget(general_group)
 
         general_layout = QVBoxLayout(general_group)
         general_layout.setContentsMargins(16, 16, 16, 16)
@@ -110,6 +78,7 @@ class SettingView(QWidget):
         general_divider.setFrameShape(QFrame.Shape.HLine)
         general_layout.addWidget(general_divider)
 
+        # General setting : UI language
         language_row = QHBoxLayout()
         self.language_label = QLabel("Language")
         self.language_combo = QComboBox()
@@ -119,10 +88,11 @@ class SettingView(QWidget):
         language_row.addWidget(self.language_combo)
         language_row.addStretch()
         general_layout.addLayout(language_row)
+        self.bind_combo(self.language_combo, "ui.language")
 
         camera_group = QFrame()
         camera_group.setObjectName("settingCameraGroup")
-        panel_layout.addWidget(camera_group)
+        content_layout.addWidget(camera_group)
 
         camera_layout = QVBoxLayout(camera_group)
         camera_layout.setContentsMargins(16, 16, 16, 16)
@@ -155,6 +125,7 @@ class SettingView(QWidget):
         local_id_row.addWidget(self.local_id)
         local_id_row.addStretch()
         camera_layout.addLayout(local_id_row)
+        self.bind_spinbox(self.local_id, "camera.local_camera_id")
 
         self.remote_radio = QRadioButton("Remote camera")
         camera_layout.addWidget(self.remote_radio)
@@ -176,14 +147,19 @@ class SettingView(QWidget):
         remote_row.addWidget(self.remote_port)
         remote_row.addStretch()
         camera_layout.addLayout(remote_row)
+        self.bind_line_edit(self.remote_ip, "camera.remote.ip")
+        self.bind_spinbox(self.remote_port, "camera.remote.port")
 
         radio_group = QButtonGroup(self)
         radio_group.addButton(self.local_radio)
         radio_group.addButton(self.remote_radio)
+        self.local_radio.setProperty("tag_value", "local")
+        self.remote_radio.setProperty("tag_value", "remote")
+        self.bind_radio_group(radio_group, "camera.mode")
 
         other_group = QFrame()
         other_group.setObjectName("settingOtherGroup")
-        panel_layout.addWidget(other_group)
+        content_layout.addWidget(other_group)
 
         other_layout = QVBoxLayout(other_group)
         other_layout.setContentsMargins(16, 16, 16, 16)
@@ -221,6 +197,8 @@ class SettingView(QWidget):
         service_cfg_row.addWidget(self.service_port)
         service_cfg_row.addStretch()
         other_layout.addLayout(service_cfg_row)
+        self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
+        self.bind_spinbox(self.service_port, "local_service.camera_id")
 
         start_btn_row = QHBoxLayout()
         start_btn_row.addSpacing(24)
@@ -239,7 +217,7 @@ class SettingView(QWidget):
         reset_btn_row.addStretch()
         other_layout.addLayout(reset_btn_row)
 
-        panel_layout.addStretch()
+        content_layout.addStretch()
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -250,64 +228,61 @@ class SettingView(QWidget):
         btn_row.addWidget(self.close_btn)
         panel_layout.addLayout(btn_row)
 
-        self.save_btn.clicked.connect(self._save)
-        self.close_btn.clicked.connect(self._close_with_unsaved_check)
+        self.save_btn.clicked.connect(self.vm.save_config)
+        self.close_btn.clicked.connect(self.vm.close)
         self.reset_btn.clicked.connect(self._restore_default)
         self.start_service_btn.clicked.connect(self._start_service)
-        self.language_combo.currentIndexChanged.connect(self._on_language_changed)
         self.vm.close_requested.connect(self.hide)
 
-        self._load_from_setting_model()
+        self.refresh_from_model()
+
+    def bind_radio_group(self, group, path):
+        def on_changed(btn):
+            value = btn.property("tag_value")
+            self.vm.set_config(path, value)
+
+        group.buttonClicked.connect(on_changed)
+
+    def bind_line_edit(self, edit, path: str):
+        def on_changed(text):
+            self.vm.set_config(path, text)
+
+        edit.textChanged.connect(on_changed)
+
+    def bind_combo(self, combo, path: str):
+        def on_changed():
+            self.vm.set_config(path, combo.currentData())
+
+        combo.currentIndexChanged.connect(on_changed)
+
+    def bind_spinbox(self, spinbox, path: str):
+        def on_changed(value: int):
+            self.vm.set_config(path, int(value))
+
+        spinbox.valueChanged.connect(on_changed)
 
     def refresh_from_model(self):
-        self._load_from_setting_model()
-
-    def _load_from_setting_model(self):
-        cfg = self.vm.model
-        self.current_language = cfg.language
-        language_idx = self.language_combo.findData(cfg.language)
+        language_idx = self.language_combo.findData(self.vm.get_config("ui.language"))
         self.language_combo.blockSignals(True)
         self.language_combo.setCurrentIndex(0 if language_idx < 0 else language_idx)
         self.language_combo.blockSignals(False)
-        self.local_id.setValue(int(cfg.local_camera_id or 0))
-        self.remote_ip.setText(cfg.remote_ip or "")
-        self.remote_port.setValue(int(cfg.remote_port or 10000))
-        self.service_camera_id.setValue(int(cfg.service_camera_id or 0))
-        self.service_port.setValue(int(cfg.service_port or 10000))
-        if cfg.camera_mode == "remote":
+        self._apply_language()
+
+        if self.vm.get_config("camera.mode") == "remote":
             self.remote_radio.setChecked(True)
         else:
             self.local_radio.setChecked(True)
-        self._saved_camera_state = self._current_camera_state()
-        self._apply_language(cfg.language)
 
-    def _current_camera_state(self):
-        return {
-            "mode": "local" if self.local_radio.isChecked() else "remote",
-            "local_camera_id": self.local_id.value(),
-            "remote_ip": self.remote_ip.text().strip(),
-            "remote_port": self.remote_port.value(),
-            "service_camera_id": self.service_camera_id.value(),
-            "service_port": self.service_port.value(),
-        }
+        self.local_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
+        self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
+        self.remote_port.setValue(int(self.vm.get_config("camera.remote.port") or 10000))
 
-    def _has_unsaved_camera_changes(self):
-        return self._current_camera_state() != self._saved_camera_state
+        self.service_camera_id.setValue(int(self.vm.get_config("local_service.camera_id") or 0))
+        self.service_port.setValue(int(self.vm.get_config("local_service.port") or 10000))
 
-    def _on_language_changed(self, _index):
-        language = self.language_combo.currentData()
-        if not language:
-            return
-        self.current_language = language
-        self.vm.change_language(language)
-        self._apply_language(language)
+    def _apply_language(self):
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
 
-    def _i18n(self):
-        return self.TRANSLATIONS.get(self.current_language, self.TRANSLATIONS["zh"])
-
-    def _apply_language(self, language):
-        self.current_language = language
-        i18n = self._i18n()
         self.title_label.setText(i18n["title"])
         self.general_title_label.setText(i18n["general_title"])
         self.language_label.setText(i18n["language"])
@@ -324,37 +299,6 @@ class SettingView(QWidget):
         self.service_id_label.setText(i18n["service_id"])
         self.service_port_label.setText(i18n["service_port"])
 
-    def _save(self):
-        mode = "local" if self.local_radio.isChecked() else "remote"
-        self._saved_camera_state = self._current_camera_state()
-        self.vm.save_camera_config(
-            mode,
-            self.local_id.value(),
-            self.remote_ip.text().strip(),
-            self.remote_port.value(),
-            self.service_camera_id.value(),
-            self.service_port.value(),
-        )
-
-    def _close_with_unsaved_check(self):
-        if not self._has_unsaved_camera_changes():
-            self.hide()
-            return
-
-        i18n = self._i18n()
-        msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Icon.Warning)
-        msg.setWindowTitle(i18n["unsaved_title"])
-        msg.setText(i18n["unsaved_msg"])
-        save_btn = msg.addButton(i18n["save_btn"], QMessageBox.ButtonRole.AcceptRole)
-        close_btn = msg.addButton(i18n["close_btn"], QMessageBox.ButtonRole.DestructiveRole)
-        msg.exec()
-
-        if msg.clickedButton() == save_btn:
-            self._save()
-        elif msg.clickedButton() == close_btn:
-            self.hide()
-
     def _start_service(self):
         self.vm.start_local_service_only(
             self.service_camera_id.value(),
@@ -362,7 +306,7 @@ class SettingView(QWidget):
         )
 
     def _restore_default(self):
-        i18n = self._i18n()
+        i18n = SETTING_I18N.get(self.vm.model.get("ui.language"), self.TRANSLATIONS["zh"])
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
         msg.setWindowTitle(i18n["confirm_reset_title"])
@@ -372,10 +316,9 @@ class SettingView(QWidget):
         msg.exec()
         if msg.clickedButton() == confirm_btn:
             self.vm.restore_default_config()
-            self._load_from_setting_model()
 
     def showEvent(self, event):
-        self._load_from_setting_model()
+        self.refresh_from_model()
         super().showEvent(event)
 
     def hideEvent(self, event):
