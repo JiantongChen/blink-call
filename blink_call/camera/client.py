@@ -8,7 +8,7 @@ import numpy as np
 
 
 class RemoteCameraClient:
-    def __init__(self, ip: str, port: int, timeout: float = 5, interval: float = 0.03):
+    def __init__(self, ip: str, port: int, timeout: float = 3, interval: float = 0.03):
         self.ip = ip
         self.port = port
         self.timeout = timeout

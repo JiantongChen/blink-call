@@ -76,7 +76,7 @@ class HomeModel:
             return "local", frame, None
 
         if self.active_mode == Mode.REMOTE and self.remote_client is not None:
-            status_code = self.remote_client.get_status_code()
+            status_code = self.remote_client.status_code
             frame = self.remote_client.read_latest_frame()
             return "remote", frame, status_code
 

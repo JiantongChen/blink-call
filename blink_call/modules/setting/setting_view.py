@@ -303,7 +303,7 @@ class SettingView(QWidget):
         self.vm.start_local_service_only()
 
     def _restore_default(self):
-        i18n = SETTING_I18N.get(self.vm.model.get("ui.language"), self.TRANSLATIONS["zh"])
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
         msg.setWindowTitle(i18n["confirm_reset_title"])

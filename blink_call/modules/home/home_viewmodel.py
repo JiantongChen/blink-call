@@ -55,9 +55,8 @@ class HomeViewModel(QObject):
         if self.setting_model.get_config("camera.mode") == "remote":
             remote_ip = self.setting_vm.get_config("camera.remote.ip")
             remote_port = self.setting_vm.get_config("camera.remote.port")
-            ok = self.model.start_remote_capture(remote_ip, remote_port)
-
-            self.timer.start() if ok else self.timer.stop()
+            self.model.start_remote_capture(remote_ip, remote_port)
+            self.timer.start()
 
         else:
             local_camera_id = self.setting_vm.get_config("camera.local_camera_id")
