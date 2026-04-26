@@ -1,0 +1,47 @@
+from copy import deepcopy
+from pathlib import Path
+
+from blink_call.utils.helper import Helper
+
+LOCAL_CONFIG_PATH = "configs/local_config.yaml"
+
+
+class ConfigManager:
+    @classmethod
+    def get_default_config(cls):
+        _default_config = {
+            "ui": {"language": "zh"},
+            "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
+            "local_service": {"camera_id": 0, "port": 17925},
+        }
+
+        return _default_config
+
+    @classmethod
+    def get_local_config(cls):
+        default_config = cls.get_default_config()
+
+        path = Path(LOCAL_CONFIG_PATH)
+        if path.exists():
+            local_config = Helper.read_yaml(path)
+            return Helper.deep_merge_dict(default_config, local_config)
+
+        cls.save_local_config(default_config)
+        return default_config
+
+    @classmethod
+    def save_local_config(cls, local_config):
+        Helper.write_yaml(Path(LOCAL_CONFIG_PATH), local_config)
+
+    @classmethod
+    def update_local_config(cls, patch):
+        current = cls.get_local_config()
+        merged = Helper.deep_merge_dict(current, patch or {})
+        cls.save_local_config(merged)
+        return merged
+
+    @classmethod
+    def reset_local_config_to_default(cls):
+        default_config = deepcopy(cls.get_default_config())
+        cls.save_local_config(default_config)
+        return default_config

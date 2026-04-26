@@ -1,0 +1,252 @@
+/* Base */
+QWidget {
+    color: #1f2937;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 14px;
+}
+
+/* Home */
+QWidget#homeView {
+    background: #000000;
+}
+
+QLabel#homeVideoLabel {
+    color: #374151;
+    font-size: 24px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+QPushButton#homeSettingBtn,
+QPushButton#homeExitBtn {
+    background: rgba(255, 255, 255, 0.92);
+    color: #111827;
+    border: 1px solid #111827;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+QPushButton#homeSettingBtn:hover,
+QPushButton#homeExitBtn:hover {
+    background: #ffffff;
+}
+
+QPushButton#homeSettingBtn:pressed,
+QPushButton#homeExitBtn:pressed {
+    background: #e5e7eb;
+}
+
+QPushButton#homeExitBtn {
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QPushButton#homeExitBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#homeExitBtn:pressed {
+    background: #991b1b;
+}
+
+/* Setting popup */
+QWidget#settingOverlay {
+    background-color: rgba(0, 0, 0, 120);
+}
+
+QFrame#settingPanel {
+    background: #ffffff;
+    border-radius: 12px;
+}
+
+QLabel#settingTitle {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+QFrame#settingLeftNav {
+    background: #ffffff;
+    border-radius: 10px;
+}
+
+QScrollArea#settingLeftScroll,
+QScrollArea#settingRightScroll {
+    background: transparent;
+}
+
+QFrame#settingCenterDivider {
+    background: #e5e7eb;
+    min-width: 1px;
+    max-width: 1px;
+    border: none;
+}
+
+QWidget#settingNavRow {
+    border-radius: 10px;
+}
+
+QWidget#settingNavRow[active="true"] {
+    background: #e5e7eb;
+}
+
+QLabel#settingNavIconSlot {
+    background: transparent;
+    border-radius: 5px;
+}
+
+QLabel#settingNavIconSlot[active="true"] {
+    background: #e5e7eb;
+}
+
+QPushButton#settingNavBtn {
+    min-height: 40px;
+    text-align: left;
+    color: #374151;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+}
+
+QWidget#settingNavRow[active="true"] QPushButton#settingNavBtn {
+    color: #1f2937;
+}
+
+QFrame#settingContentPage {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+QLabel#settingSubSectionTitle {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+QFrame#settingItemDivider {
+    background: #c6ced8;
+    min-height: 1px;
+    max-height: 1px;
+    border: none;
+}
+
+QLineEdit,
+QSpinBox,
+QComboBox {
+    min-height: 30px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    background: #ffffff;
+}
+
+QSpinBox {
+    padding-right: 24px;
+}
+
+QSpinBox::up-button,
+QSpinBox::down-button {
+    width: 20px;
+}
+
+QLineEdit:focus,
+QSpinBox:focus,
+QComboBox:focus {
+    border: 1px solid #2563eb;
+}
+
+QRadioButton {
+    color: #111827;
+}
+
+QRadioButton::indicator {
+    width: 14px;
+    height: 14px;
+}
+
+QRadioButton::indicator:unchecked {
+    border: 2px solid #6b7280;
+    border-radius: 7px;
+    background: #ffffff;
+}
+
+QRadioButton::indicator:checked {
+    border: 2px solid #2563eb;
+    border-radius: 7px;
+    background: #2563eb;
+}
+
+QPushButton#settingSaveBtn,
+QPushButton#settingCloseBtn,
+QPushButton#settingResetBtn,
+QPushButton#settingStartServiceBtn {
+    min-height: 34px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 14px;
+}
+
+QPushButton#settingSaveBtn {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+QPushButton#settingSaveBtn:hover {
+    background: #1d4ed8;
+}
+
+QPushButton#settingSaveBtn:pressed {
+    background: #1e40af;
+}
+
+QPushButton#settingCloseBtn {
+    background: #9ca3af;
+    color: #111827;
+}
+
+QPushButton#settingCloseBtn:hover {
+    background: #6b7280;
+}
+
+QPushButton#settingCloseBtn:pressed {
+    background: #4b5563;
+    color: #f9fafb;
+}
+
+QPushButton#settingStartServiceBtn {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+QPushButton#settingStartServiceBtn:hover {
+    background: #d97706;
+}
+
+QPushButton#settingStartServiceBtn:pressed {
+    background: #b45309;
+}
+
+QPushButton#settingResetBtn {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+QPushButton#settingResetBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#settingResetBtn:pressed {
+    background: #991b1b;
+}
