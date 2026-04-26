@@ -14,6 +14,7 @@ class MainWindow(QWidget):
         language = self._load_ui_language()
         self.set_ui_language(language)
         self.resize(1200, 800)
+        self.setMinimumSize(800, 600)
 
         self.stack = QStackedWidget()
         self.views = {}

@@ -29,6 +29,7 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     language_row = QHBoxLayout()
     language_row.setSpacing(16)
     language_label = QLabel("Language")
+    language_label.setObjectName("settingSubSectionTitle")
     language_combo = QComboBox()
     language_combo.addItem("中文", "zh")
     language_combo.addItem("English", "en")

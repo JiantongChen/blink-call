@@ -97,12 +97,12 @@ QWidget#settingNavRow[active="true"] {
 }
 
 QLabel#settingNavIconSlot {
-    background: #cbd5e1;
+    background: transparent;
     border-radius: 5px;
 }
 
 QLabel#settingNavIconSlot[active="true"] {
-    background: #9ca3af;
+    background: #e5e7eb;
 }
 
 QPushButton#settingNavBtn {
@@ -128,12 +128,6 @@ QFrame#settingContentPage {
 }
 
 QLabel#settingSubSectionTitle {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-QLabel#settingChooseLabel {
     font-size: 14px;
     font-weight: 700;
     color: #1f2937;

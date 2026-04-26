@@ -29,6 +29,7 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     reset_btn_row = QHBoxLayout()
     reset_btn_row.setSpacing(16)
     reset_label = QLabel("Restore defaults")
+    reset_label.setObjectName("settingSubSectionTitle")
     reset_btn = QPushButton("Restore defaults")
     reset_btn.setObjectName("settingResetBtn")
     reset_btn.setFixedWidth(260)
