@@ -14,12 +14,14 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     general_scroll = QScrollArea()
     general_scroll.setObjectName("settingRightScroll")
     general_scroll.setWidgetResizable(True)
-    general_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    general_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+    general_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     general_scroll.setFrameShape(QFrame.Shape.NoFrame)
     content_stack.addWidget(general_scroll)
 
     general_page = QFrame()
     general_page.setObjectName("settingContentPage")
+    general_page.setMinimumWidth(550)
     general_scroll.setWidget(general_page)
 
     general_layout = QVBoxLayout(general_page)

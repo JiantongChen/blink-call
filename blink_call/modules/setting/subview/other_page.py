@@ -14,12 +14,14 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     other_scroll = QScrollArea()
     other_scroll.setObjectName("settingRightScroll")
     other_scroll.setWidgetResizable(True)
-    other_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    other_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+    other_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     other_scroll.setFrameShape(QFrame.Shape.NoFrame)
     content_stack.addWidget(other_scroll)
 
     other_page = QFrame()
     other_page.setObjectName("settingContentPage")
+    other_page.setMinimumWidth(550)
     other_scroll.setWidget(other_page)
 
     other_layout = QVBoxLayout(other_page)

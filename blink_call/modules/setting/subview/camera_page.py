@@ -51,12 +51,14 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     camera_scroll = QScrollArea()
     camera_scroll.setObjectName("settingRightScroll")
     camera_scroll.setWidgetResizable(True)
-    camera_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    camera_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+    camera_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
     camera_scroll.setFrameShape(QFrame.Shape.NoFrame)
     content_stack.addWidget(camera_scroll)
 
     camera_page = QFrame()
     camera_page.setObjectName("settingContentPage")
+    camera_page.setMinimumWidth(550)
     camera_scroll.setWidget(camera_page)
 
     camera_layout = QVBoxLayout(camera_page)
