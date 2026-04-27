@@ -1,3 +1,6 @@
+from datetime import datetime
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
@@ -137,3 +140,21 @@ class HomeView(QWidget):
 
     def _append_debug_message(self, text: str):
         self.debug_info.appendPlainText(text)
+        self._append_debug_message_to_file(text)
+
+    def _append_debug_message_to_file(self, text: str):
+        if not self.vm.setting_vm.get_config("debug_log.save_to_local"):
+            return
+
+        log_dir = self.vm.setting_vm.get_config("debug_log.local_dir") or str(Path.home() / "Desktop")
+        log_path = Path(log_dir) / "blink_call.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        lines = text.splitlines() or [text]
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with log_path.open("a", encoding="utf-8") as f:
+                for line in lines:
+                    f.write(f"[{timestamp}] {line}\n")
+        except OSError:
+            return

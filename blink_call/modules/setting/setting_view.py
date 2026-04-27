@@ -2,6 +2,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -120,14 +121,21 @@ class SettingView(QWidget):
         radio_group.addButton(self.camera_remote_mode_radio)
         self.camera_local_mode_radio.setProperty("tag_value", "local")
         self.camera_remote_mode_radio.setProperty("tag_value", "remote")
-        self.bind_radio_group(radio_group, "camera.mode")
+        self.bind_radio_group(radio_group, "camera.mode", self._update_camera_mode_visibility)
 
         debug_mode_group = QButtonGroup(self)
         debug_mode_group.addButton(self.debug_mode_on_radio)
         debug_mode_group.addButton(self.debug_mode_off_radio)
         self.debug_mode_on_radio.setProperty("tag_value", True)
         self.debug_mode_off_radio.setProperty("tag_value", False)
-        self.bind_radio_group(debug_mode_group, "debug_mode")
+        self.bind_radio_group(debug_mode_group, "debug_mode", self._update_debug_logging_visibility)
+
+        debug_log_save_group = QButtonGroup(self)
+        debug_log_save_group.addButton(self.debug_log_save_yes_radio)
+        debug_log_save_group.addButton(self.debug_log_save_no_radio)
+        self.debug_log_save_yes_radio.setProperty("tag_value", True)
+        self.debug_log_save_no_radio.setProperty("tag_value", False)
+        self.bind_radio_group(debug_log_save_group, "debug_log.save_to_local", self._update_debug_logging_visibility)
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -142,6 +150,7 @@ class SettingView(QWidget):
         self.close_btn.clicked.connect(self.vm.close)
         self.reset_config_btn.clicked.connect(self._restore_default)
         self.start_service_btn.clicked.connect(self._start_service)
+        self.debug_log_path_choose_btn.clicked.connect(self._choose_debug_log_dir)
         self.vm.close_requested.connect(self.hide)
 
         self.general_nav_btn.setChecked(True)
@@ -190,19 +199,14 @@ class SettingView(QWidget):
             icon.style().unpolish(icon)
             icon.style().polish(icon)
 
-    def bind_radio_group(self, group, path):
+    def bind_radio_group(self, group, path, on_after_changed=None):
         def on_changed(btn):
             value = btn.property("tag_value")
             self.vm.set_config(path, value)
-            if path == "camera.mode":
-                self._update_camera_mode_visibility(value)
+            if on_after_changed:
+                on_after_changed(value)
 
         group.buttonClicked.connect(on_changed)
-
-    def _update_camera_mode_visibility(self, mode: str):
-        is_local = mode != "remote"
-        self.local_mode_widgets_row.setVisible(is_local)
-        self.remote_mode_widgets_row.setVisible(not is_local)
 
     def bind_line_edit(self, edit, path: str):
         def on_changed(text):
@@ -241,6 +245,13 @@ class SettingView(QWidget):
         else:
             self.debug_mode_off_radio.setChecked(True)
 
+        if bool(self.vm.get_config("debug_log.save_to_local")):
+            self.debug_log_save_yes_radio.setChecked(True)
+        else:
+            self.debug_log_save_no_radio.setChecked(True)
+        self.debug_log_path_value_label.setText(self.vm.get_config("debug_log.local_dir") or "")
+        self._update_debug_logging_visibility()
+
         self.local_camera_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
         self.remote_port.setValue(int(self.vm.get_config("camera.remote.port") or 10000))
@@ -274,6 +285,11 @@ class SettingView(QWidget):
         self.debug_mode_label.setText(i18n["debug_mode_label"])
         self.debug_mode_on_radio.setText(i18n["debug_mode_on_radio"])
         self.debug_mode_off_radio.setText(i18n["debug_mode_off_radio"])
+        self.debug_log_save_label.setText(i18n["debug_log_save_label"])
+        self.debug_log_save_yes_radio.setText(i18n["debug_log_save_yes_radio"])
+        self.debug_log_save_no_radio.setText(i18n["debug_log_save_no_radio"])
+        self.debug_log_path_label.setText(i18n["debug_log_path_label"])
+        self.debug_log_path_choose_btn.setText(i18n["debug_log_path_choose_btn"])
 
         self.reset_config_btn.setText(i18n["reset_config_btn"])
         self.reset_config_label.setText(i18n["reset_config_btn"])
@@ -295,6 +311,37 @@ class SettingView(QWidget):
         msg.exec()
         if msg.clickedButton() == confirm_btn:
             self.vm.restore_default_config()
+
+    def _choose_debug_log_dir(self):
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        current_dir = self.vm.get_config("debug_log.local_dir", source="temp") or ""
+        dialog = QFileDialog(self, i18n["debug_log_choose_dir_title"], current_dir)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+
+        if dialog.exec() != QFileDialog.DialogCode.Accepted:
+            return
+
+        selected_list = dialog.selectedFiles()
+        if not selected_list:
+            return
+        selected = selected_list[0]
+
+        self.vm.set_config("debug_log.local_dir", selected)
+        self.debug_log_path_value_label.setText(selected)
+
+    def _update_camera_mode_visibility(self, mode: str):
+        is_local = mode != "remote"
+        self.local_mode_widgets_row.setVisible(is_local)
+        self.remote_mode_widgets_row.setVisible(not is_local)
+
+    def _update_debug_logging_visibility(self, _value=None):
+        is_debug_on = bool(self.debug_mode_on_radio.isChecked())
+        is_save_local = bool(self.debug_log_save_yes_radio.isChecked())
+
+        self.debug_log_save_widgets_row.setVisible(is_debug_on)
+        self.debug_log_path_widgets_row.setVisible(is_debug_on and is_save_local)
 
     def showEvent(self, event):
         self.refresh_from_model()

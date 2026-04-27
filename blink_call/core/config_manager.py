@@ -9,11 +9,13 @@ LOCAL_CONFIG_PATH = "configs/local_config.yaml"
 class ConfigManager:
     @classmethod
     def get_default_config(cls):
+        default_log_dir = str(Path.home() / "Desktop")
         _default_config = {
             "ui": {"language": "zh"},
             "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
             "local_service": {"camera_id": 0, "port": 17925},
             "debug_mode": False,
+            "debug_log": {"save_to_local": False, "local_dir": default_log_dir},
         }
 
         return _default_config
