@@ -22,7 +22,7 @@ class HomeModel:
 
         self.active_mode = Mode.NONE
 
-    def _stop_active_sources(self):
+    def stop_active_sources(self):
         if self.local_capture is not None:
             self.local_capture.stop()
             self.local_capture = None
@@ -38,7 +38,7 @@ class HomeModel:
         self.active_mode = Mode.NONE
 
     def start_local_capture(self, camera_id: int):
-        self._stop_active_sources()
+        self.stop_active_sources()
 
         self.local_capture = LocalCameraCapture(camera_id)
         ok = self.local_capture.start()
@@ -49,14 +49,14 @@ class HomeModel:
         return True
 
     def start_remote_capture(self, remote_ip: str, remote_port: int):
-        self._stop_active_sources()
+        self.stop_active_sources()
 
         self.remote_client = RemoteCameraClient(remote_ip, int(remote_port))
         self.remote_client.start()
         self.active_mode = Mode.REMOTE
 
     def start_local_camera_service(self, camera_id: int, port: int):
-        self._stop_active_sources()
+        self.stop_active_sources()
 
         service_port = Helper.get_available_port(port)
         self.service_server = LocalCameraFrameServer(
@@ -81,6 +81,3 @@ class HomeModel:
             return "remote", frame, status_code
 
         return "unknown", None, None
-
-    def stop(self):
-        self._stop_active_sources()

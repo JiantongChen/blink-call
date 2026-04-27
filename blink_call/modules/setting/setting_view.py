@@ -25,7 +25,7 @@ from blink_call.modules.setting.subview import (
 
 
 class SettingView(QWidget):
-    popup_closed = Signal()
+    close_setting_popup = Signal()
 
     def __init__(self, vm: SettingViewModel, parent=None):
         super().__init__(parent)
@@ -94,7 +94,7 @@ class SettingView(QWidget):
         nav_group.addButton(self.general_nav_btn, 0)
         nav_group.addButton(self.camera_nav_btn, 1)
         nav_group.addButton(self.other_nav_btn, 2)
-        nav_group.idClicked.connect(self._switch_page)
+        nav_group.idClicked.connect(self.on_switch_setting_page)
 
         vline = QFrame()
         vline.setObjectName("settingCenterDivider")
@@ -148,14 +148,12 @@ class SettingView(QWidget):
 
         self.save_btn.clicked.connect(self.vm.save_config)
         self.close_btn.clicked.connect(self.vm.close)
-        self.reset_config_btn.clicked.connect(self._restore_default)
-        self.start_service_btn.clicked.connect(self._start_service)
-        self.debug_log_path_choose_btn.clicked.connect(self._choose_debug_log_dir)
+        self.reset_config_btn.clicked.connect(self.on_restore_default_config)
+        self.start_service_btn.clicked.connect(self.on_start_service)
+        self.debug_log_path_choose_btn.clicked.connect(self.on_choose_debug_log_dir)
         self.vm.close_requested.connect(self.hide)
 
-        self.general_nav_btn.setChecked(True)
-        self.content_stack.setCurrentIndex(0)
-        self._update_nav_styles(0)
+        self.on_switch_setting_page(0)
         self.refresh_from_model()
 
     def _create_nav_item(self, text: str):
@@ -184,11 +182,8 @@ class SettingView(QWidget):
         for key, value in vars(page_widgets).items():
             setattr(self, key, value)
 
-    def _switch_page(self, page_index: int):
+    def on_switch_setting_page(self, page_index: int):
         self.content_stack.setCurrentIndex(page_index)
-        self._update_nav_styles(page_index)
-
-    def _update_nav_styles(self, page_index: int):
         for idx, row in enumerate(self.nav_rows):
             row.setProperty("active", idx == page_index)
             row.style().unpolish(row)
@@ -297,10 +292,10 @@ class SettingView(QWidget):
         self.save_btn.setText(i18n["save_btn"])
         self.close_btn.setText(i18n["close_btn"])
 
-    def _start_service(self):
-        self.vm.start_local_service_only()
+    def on_start_service(self):
+        self.vm.on_start_local_service()
 
-    def _restore_default(self):
+    def on_restore_default_config(self):
         i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
@@ -312,7 +307,7 @@ class SettingView(QWidget):
         if msg.clickedButton() == confirm_btn:
             self.vm.restore_default_config()
 
-    def _choose_debug_log_dir(self):
+    def on_choose_debug_log_dir(self):
         i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
         current_dir = self.vm.get_config("debug_log.local_dir", source="temp") or ""
         dialog = QFileDialog(self, i18n["debug_log_choose_dir_title"], current_dir)
@@ -348,5 +343,5 @@ class SettingView(QWidget):
         super().showEvent(event)
 
     def hideEvent(self, event):
-        self.popup_closed.emit()
+        self.close_setting_popup.emit()
         super().hideEvent(event)

@@ -13,12 +13,12 @@ from blink_call.utils.debug_overlay import draw_debug
 
 class HomeViewModel(QObject):
     frame_ready = Signal(QImage)
-    camera_status = Signal(str)
+    show_camera_status = Signal(str)
     local_service_status = Signal(bool)
 
     debug_mode_state = Signal(bool)
-    debug_message = Signal(str)
-    debug_cleared = Signal()
+    show_debug_msg = Signal(str)
+    clear_debug_msg = Signal()
 
     STATUS_TEXTS = {
         "zh": {
@@ -48,7 +48,7 @@ class HomeViewModel(QObject):
 
         self.infer_worker = InferenceWorker(self.model)
         self.infer_worker.result_ready.connect(self.on_infer_result)
-        self.infer_worker.debug_message.connect(self.on_infer_debug)
+        self.infer_worker.show_debug_msg.connect(self.on_infer_debug)
 
         self.timer = QTimer(self)
         self.timer.setInterval(33)
@@ -64,14 +64,14 @@ class HomeViewModel(QObject):
         self.ui_fps_window_start = time.perf_counter()
         self.ui_fps_counter = 0
 
-    def emit_camera_status(self, key, **params):
+    def emit_show_camera_status(self, key, **params):
         _t = self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
-        self.camera_status.emit(_t.format(**params))
+        self.show_camera_status.emit(_t.format(**params))
 
     def on_page_enter(self):
         self._initialize_vars()
 
-        self.debug_cleared.emit()
+        self.clear_debug_msg.emit()
         self.debug_mode_state.emit(self.debug_mode)
         self.start_local_camera()
 
@@ -92,17 +92,17 @@ class HomeViewModel(QObject):
             self.timer.start() if ok else self.timer.stop()
             self.start_infer_worker() if ok else self.stop_infer_worker()
             if not ok:
-                self.emit_camera_status("local_invalid_camera")
+                self.emit_show_camera_status("local_invalid_camera")
 
     def on_update_frame(self):
         _mode, frame, status_code = self.model.read_frame()
         if frame is None:
             if _mode == "local":
-                self.emit_camera_status("local_invalid_camera")
+                self.emit_show_camera_status("local_invalid_camera")
             elif _mode == "remote":
-                self.emit_camera_status("remote_error", status_code=status_code)
+                self.emit_show_camera_status("remote_error", status_code=status_code)
             else:
-                self.emit_camera_status("unknown_error")
+                self.emit_show_camera_status("unknown_error")
             return
 
         if self.debug_mode:
@@ -112,7 +112,7 @@ class HomeViewModel(QObject):
 
             if elapsed >= self.stat_fps_interval:
                 ui_fps = self.ui_fps_counter / elapsed
-                self.debug_message.emit(f"ui_frame_fps={ui_fps:.2f}")
+                self.show_debug_msg.emit(f"ui_frame_fps={ui_fps:.2f}")
 
                 self.ui_fps_window_start = now
                 self.ui_fps_counter = 0
@@ -135,16 +135,16 @@ class HomeViewModel(QObject):
         self.local_service_status.emit(True)
 
         if ok:
-            self.emit_camera_status("service_started_success", ip=ip, port=port)
+            self.emit_show_camera_status("service_started_success", ip=ip, port=port)
         else:
-            self.emit_camera_status("service_started_faild")
+            self.emit_show_camera_status("service_started_faild")
 
     def on_infer_result(self, result):
         self.latest_infer_result = result
 
     def on_infer_debug(self, text: str):
         if self.debug_mode:
-            self.debug_message.emit(text)
+            self.show_debug_msg.emit(text)
 
     def start_infer_worker(self):
         if not self.infer_worker.isRunning():
@@ -158,4 +158,4 @@ class HomeViewModel(QObject):
     def stop_all(self):
         self.timer.stop()
         self.stop_infer_worker()
-        self.model.stop()
+        self.model.stop_active_sources()

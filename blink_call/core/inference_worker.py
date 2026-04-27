@@ -6,7 +6,7 @@ from PySide6.QtCore import QThread, Signal
 
 class InferenceWorker(QThread):
     result_ready = Signal(dict)
-    debug_message = Signal(str)
+    show_debug_msg = Signal(str)
 
     def __init__(self, home_model):
         super().__init__()
@@ -25,7 +25,7 @@ class InferenceWorker(QThread):
         self.count = 0
 
     def debug_info(self, text):
-        self.debug_message.emit(text)
+        self.show_debug_msg.emit(text)
 
     def stat_fps(self):
         self.infer_fps_counter += 1

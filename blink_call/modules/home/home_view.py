@@ -51,12 +51,12 @@ class HomeView(QWidget):
         self.setting_btn.setObjectName("homeSettingBtn")
         self.setting_btn.setFixedSize(88, 36)
         self.setting_btn.move(20, 20)
-        self.setting_btn.clicked.connect(self._open_setting_popup)
+        self.setting_btn.clicked.connect(self.on_open_setting_popup)
 
         self.setting_popup = SettingView(self.vm.setting_vm, self)
         self.setting_popup.raise_()
         self.setting_popup.setVisible(False)
-        self.setting_popup.popup_closed.connect(self._on_setting_popup_closed)
+        self.setting_popup.close_setting_popup.connect(self.on_close_setting_popup)
 
         self.exit_btn = QPushButton(i18n["exit"], self)
         self.exit_btn.setObjectName("homeExitBtn")
@@ -70,31 +70,30 @@ class HomeView(QWidget):
         self.debug_info.setVisible(False)
         self.debug_info.setMaximumBlockCount(100)
 
-        self.vm.frame_ready.connect(self._show_frame)
-        self.vm.camera_status.connect(self._show_status)
-        self.vm.debug_message.connect(self._append_debug_message)
-        self.vm.debug_mode_state.connect(self._set_debug_visible)
-        self.vm.debug_cleared.connect(self._clear_debug_message)
-        self.vm.setting_vm.language_changed.connect(self._apply_language)
-        self.vm.local_service_status.connect(self._set_service_mode)
+        self.vm.frame_ready.connect(self.on_show_frame)
+        self.vm.show_camera_status.connect(self.on_show_camera_status)
+        self.vm.debug_mode_state.connect(self.on_set_debug_visible)
+        self.vm.show_debug_msg.connect(self.on_show_debug_msg)
+        self.vm.clear_debug_msg.connect(self.on_clear_debug_msg)
+        self.vm.setting_vm.language_changed.connect(self.on_apply_language)
+        self.vm.local_service_status.connect(self.on_set_service_mode)
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.setting_popup.setGeometry(0, 0, self.width(), self.height())
-        self._position_exit_btn()
-        self._position_debug_info()
+    def on_apply_language(self, language):
+        i18n = self.TEXTS.get(language, self.TEXTS["zh"])
+        self.setting_btn.setText(i18n["settings"])
+        self.exit_btn.setText(i18n["exit"])
 
-    def _open_setting_popup(self):
+    def on_open_setting_popup(self):
         self.setting_btn.setVisible(False)
         self.setting_popup.refresh_from_model()
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self.setting_popup.show()
         self.setting_popup.raise_()
 
-    def _on_setting_popup_closed(self):
+    def on_close_setting_popup(self):
         self.setting_btn.setVisible(True)
 
-    def _show_frame(self, image):
+    def on_show_frame(self, image):
         pixmap = QPixmap.fromImage(image)
         self.video_label.setPixmap(
             pixmap.scaled(
@@ -105,45 +104,25 @@ class HomeView(QWidget):
         )
         self.video_label.setText("")
 
-    def _show_status(self, text):
+    def on_show_camera_status(self, text):
         self.video_label.setPixmap(QPixmap())
         self.video_label.setText(text)
 
-    def _apply_language(self, language):
-        i18n = self.TEXTS.get(language, self.TEXTS["zh"])
-        self.setting_btn.setText(i18n["settings"])
-        self.exit_btn.setText(i18n["exit"])
-
-    def _set_service_mode(self, active: bool):
+    def on_set_service_mode(self, active: bool):
         self.setting_btn.setVisible(not active)
         self.exit_btn.setVisible(active)
         if active:
-            self._set_debug_visible(False)
-        self._position_exit_btn()
+            self.debug_info.setVisible(False)
 
-    def _position_exit_btn(self):
-        x = (self.width() - self.exit_btn.width()) // 2
-        y = int(self.height() * 0.78)
-        self.exit_btn.move(max(0, x), max(0, y))
-
-    def _position_debug_info(self):
-        panel_width = min(max(int(self.width() * 0.3), 300), 400)
-        panel_height = max(int(self.height() * 0.5), 300)
-        x = self.width() - panel_width - 20
-        y = 20
-        self.debug_info.setGeometry(max(0, x), max(0, y), panel_width, panel_height)
-
-    def _set_debug_visible(self, visible: bool):
+    def on_set_debug_visible(self, visible: bool):
         self.debug_info.setVisible(visible)
 
-    def _clear_debug_message(self):
+    def on_clear_debug_msg(self):
         self.debug_info.clear()
 
-    def _append_debug_message(self, text: str):
+    def on_show_debug_msg(self, text: str):
         self.debug_info.appendPlainText(text)
-        self._append_debug_message_to_file(text)
 
-    def _append_debug_message_to_file(self, text: str):
         if not self.vm.setting_vm.get_config("debug_log.save_to_local"):
             return
 
@@ -159,3 +138,21 @@ class HomeView(QWidget):
                     f.write(f"[{timestamp}] {line}\n")
         except OSError:
             return
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.setting_popup.setGeometry(0, 0, self.width(), self.height())
+        self._position_exit_btn()
+        self._position_debug_info()
+
+    def _position_exit_btn(self):
+        x = (self.width() - self.exit_btn.width()) // 2
+        y = int(self.height() * 0.78)
+        self.exit_btn.move(max(0, x), max(0, y))
+
+    def _position_debug_info(self):
+        panel_width = min(max(int(self.width() * 0.3), 300), 400)
+        panel_height = max(int(self.height() * 0.5), 300)
+        x = self.width() - panel_width - 20
+        y = 20
+        self.debug_info.setGeometry(max(0, x), max(0, y), panel_width, panel_height)
