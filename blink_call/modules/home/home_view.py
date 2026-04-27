@@ -1,6 +1,13 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QLabel,
+    QPlainTextEdit,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from blink_call.core.navigation import Navigation
 from blink_call.modules.home.home_viewmodel import HomeViewModel
@@ -54,15 +61,26 @@ class HomeView(QWidget):
         self.exit_btn.setVisible(False)
         self.exit_btn.clicked.connect(self.vm.on_page_enter)
 
+        self.debug_info = QPlainTextEdit(self)
+        self.debug_info.setObjectName("homeDebugInfo")
+        self.debug_info.setReadOnly(True)
+        self.debug_info.setVisible(False)
+        self.debug_info.setMaximumBlockCount(100)
+
         self.vm.frame_ready.connect(self._show_frame)
         self.vm.status_changed.connect(self._show_status)
+        self.vm.debug_message.connect(self._append_debug_message)
+        self.vm.debug_mode_changed.connect(self._set_debug_visible)
+        self.vm.debug_cleared.connect(self._clear_debug_message)
         self.vm.setting_vm.language_changed.connect(self._apply_language)
         self.vm.local_service_active_changed.connect(self._set_service_mode)
+        self._set_debug_visible(bool(self.vm.setting_vm.get_config("debug_mode")))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self._position_exit_btn()
+        self._position_debug_info()
 
     def _open_setting_popup(self):
         self.setting_btn.setVisible(False)
@@ -103,3 +121,19 @@ class HomeView(QWidget):
         x = (self.width() - self.exit_btn.width()) // 2
         y = int(self.height() * 0.78)
         self.exit_btn.move(max(0, x), max(0, y))
+
+    def _position_debug_info(self):
+        panel_width = min(max(int(self.width() * 0.3), 300), 400)
+        panel_height = max(int(self.height() * 0.5), 300)
+        x = self.width() - panel_width - 20
+        y = 20
+        self.debug_info.setGeometry(max(0, x), max(0, y), panel_width, panel_height)
+
+    def _set_debug_visible(self, visible: bool):
+        self.debug_info.setVisible(visible)
+
+    def _clear_debug_message(self):
+        self.debug_info.clear()
+
+    def _append_debug_message(self, text: str):
+        self.debug_info.appendPlainText(text)

@@ -81,3 +81,6 @@ class HomeModel:
             return "remote", frame, status_code
 
         return "unknown", None, None
+
+    def stop(self):
+        self._stop_active_sources()
