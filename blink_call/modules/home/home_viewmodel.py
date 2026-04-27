@@ -6,6 +6,7 @@ from blink_call.core.inference_worker import InferenceWorker
 from blink_call.modules.home.home_model import HomeModel
 from blink_call.modules.setting.setting_model import SettingModel
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
+from blink_call.utils.debug_overlay import draw_debug
 
 
 class HomeViewModel(QObject):
@@ -50,6 +51,7 @@ class HomeViewModel(QObject):
         self.infer_worker.result_ready.connect(self.on_infer_result)
         self.infer_worker.debug_message.connect(self.on_infer_debug)
         self._debug_mode = bool(self.setting_vm.get_config("debug_mode"))
+        self._latest_infer_result = None
 
     def emit_status(self, key, **params):
         _t = self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
@@ -89,6 +91,9 @@ class HomeViewModel(QObject):
                 self.emit_status("unknown_error")
             return
 
+        if self._debug_mode and isinstance(self._latest_infer_result, dict):
+            frame = draw_debug(frame, self._latest_infer_result)
+
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
         image = QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888).copy()
@@ -109,7 +114,7 @@ class HomeViewModel(QObject):
             self.emit_status("service_started_faild")
 
     def on_infer_result(self, result):
-        pass
+        self._latest_infer_result = result
 
     def on_infer_debug(self, text: str):
         if self._debug_mode:
