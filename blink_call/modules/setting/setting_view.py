@@ -122,6 +122,13 @@ class SettingView(QWidget):
         self.camera_remote_mode_radio.setProperty("tag_value", "remote")
         self.bind_radio_group(radio_group, "camera.mode")
 
+        debug_mode_group = QButtonGroup(self)
+        debug_mode_group.addButton(self.debug_mode_on_radio)
+        debug_mode_group.addButton(self.debug_mode_off_radio)
+        self.debug_mode_on_radio.setProperty("tag_value", True)
+        self.debug_mode_off_radio.setProperty("tag_value", False)
+        self.bind_radio_group(debug_mode_group, "debug_mode")
+
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
         self.save_btn.setObjectName("settingSaveBtn")
@@ -229,6 +236,11 @@ class SettingView(QWidget):
             self.camera_local_mode_radio.setChecked(True)
             self._update_camera_mode_visibility("local")
 
+        if bool(self.vm.get_config("debug_mode")):
+            self.debug_mode_on_radio.setChecked(True)
+        else:
+            self.debug_mode_off_radio.setChecked(True)
+
         self.local_camera_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
         self.remote_port.setValue(int(self.vm.get_config("camera.remote.port") or 10000))
@@ -258,6 +270,10 @@ class SettingView(QWidget):
         self.service_section_label.setText(i18n["remote_camera_service_config"])
         self.service_camera_id_label.setText(i18n["local_camera_id_label"])
         self.service_port_label.setText(i18n["port_label"])
+
+        self.debug_mode_label.setText(i18n["debug_mode_label"])
+        self.debug_mode_on_radio.setText(i18n["debug_mode_on_radio"])
+        self.debug_mode_off_radio.setText(i18n["debug_mode_off_radio"])
 
         self.reset_config_btn.setText(i18n["reset_config_btn"])
         self.reset_config_label.setText(i18n["reset_config_btn"])

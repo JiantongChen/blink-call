@@ -6,14 +6,20 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QRadioButton,
     QScrollArea,
     QStackedWidget,
     QVBoxLayout,
 )
 
+from blink_call.widget import HDividerLine
+
 
 @dataclass
 class OtherPageWidgets:
+    debug_mode_label: QLabel
+    debug_mode_on_radio: QRadioButton
+    debug_mode_off_radio: QRadioButton
     reset_config_label: QLabel
     reset_config_btn: QPushButton
 
@@ -36,6 +42,20 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     other_layout.setContentsMargins(16, 16, 16, 16)
     other_layout.setSpacing(16)
 
+    debug_mode_row = QHBoxLayout()
+    debug_mode_row.setSpacing(16)
+    debug_mode_label = QLabel("Debug mode")
+    debug_mode_label.setObjectName("settingSubSectionTitle")
+    debug_mode_on_radio = QRadioButton("On")
+    debug_mode_off_radio = QRadioButton("Off")
+    debug_mode_row.addWidget(debug_mode_label)
+    debug_mode_row.addStretch()
+    debug_mode_row.addWidget(debug_mode_on_radio)
+    debug_mode_row.addWidget(debug_mode_off_radio)
+    other_layout.addLayout(debug_mode_row)
+
+    other_layout.addWidget(HDividerLine())
+
     reset_config_btn_row = QHBoxLayout()
     reset_config_btn_row.setSpacing(16)
     reset_config_label = QLabel("Restore defaults")
@@ -48,10 +68,13 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     reset_config_btn_row.addWidget(reset_config_btn)
     other_layout.addLayout(reset_config_btn_row)
 
-    divider = QFrame()
-    divider.setObjectName("settingItemDivider")
-    divider.setFrameShape(QFrame.Shape.HLine)
-    other_layout.addWidget(divider)
+    other_layout.addWidget(HDividerLine())
     other_layout.addStretch()
 
-    return OtherPageWidgets(reset_config_label=reset_config_label, reset_config_btn=reset_config_btn)
+    return OtherPageWidgets(
+        debug_mode_label=debug_mode_label,
+        debug_mode_on_radio=debug_mode_on_radio,
+        debug_mode_off_radio=debug_mode_off_radio,
+        reset_config_label=reset_config_label,
+        reset_config_btn=reset_config_btn,
+    )

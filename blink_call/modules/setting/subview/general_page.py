@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from blink_call.widget import HDividerLine
+
 
 @dataclass
 class GeneralPageWidgets:
@@ -50,10 +52,7 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     language_row.addWidget(language_combo)
     general_layout.addLayout(language_row)
 
-    divider = QFrame()
-    divider.setObjectName("settingItemDivider")
-    divider.setFrameShape(QFrame.Shape.HLine)
-    general_layout.addWidget(divider)
+    general_layout.addWidget(HDividerLine())
     general_layout.addStretch()
 
     return GeneralPageWidgets(language_label=language_label, language_combo=language_combo)

@@ -13,6 +13,7 @@ class ConfigManager:
             "ui": {"language": "zh"},
             "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
             "local_service": {"camera_id": 0, "port": 17925},
+            "debug_mode": False,
         }
 
         return _default_config

@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from blink_call.widget import NoWheelSpinBox
+from blink_call.widget import HDividerLine, NoWheelSpinBox
 
 
 @dataclass
@@ -38,13 +38,6 @@ class CameraPageWidgets:
     service_port: NoWheelSpinBox
     start_service_label: QLabel
     start_service_btn: QPushButton
-
-
-def _build_divider() -> QFrame:
-    divider = QFrame()
-    divider.setObjectName("settingItemDivider")
-    divider.setFrameShape(QFrame.Shape.HLine)
-    return divider
 
 
 def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
@@ -113,7 +106,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     remote_layout.addWidget(remote_port)
     camera_layout.addWidget(remote_mode_widgets_row)
 
-    camera_layout.addWidget(_build_divider())
+    camera_layout.addWidget(HDividerLine())
 
     start_btn_row = QHBoxLayout()
     start_btn_row.setSpacing(16)
@@ -147,7 +140,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     service_cfg_row.addWidget(service_port_label)
     service_cfg_row.addWidget(service_port)
     camera_layout.addLayout(service_cfg_row)
-    camera_layout.addWidget(_build_divider())
+    camera_layout.addWidget(HDividerLine())
     camera_layout.addStretch()
 
     return CameraPageWidgets(
