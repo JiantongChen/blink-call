@@ -34,6 +34,7 @@ class SettingViewModel(QObject):
         self.model.restore_default_config()
         self.language_changed.emit(self.get_config("ui.language"))
         self.close_requested.emit()
+        self.save_setting.emit()
 
     def start_local_service_only(self):
         self.close_requested.emit()
