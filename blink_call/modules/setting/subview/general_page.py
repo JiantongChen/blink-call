@@ -1,7 +1,15 @@
 from dataclasses import dataclass
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QLabel, QScrollArea, QStackedWidget, QVBoxLayout
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QStackedWidget,
+    QVBoxLayout,
+)
 
 
 @dataclass

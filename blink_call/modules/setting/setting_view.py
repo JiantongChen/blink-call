@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -12,11 +13,14 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QPixmap
 
-from blink_call.modules.setting.subview import build_camera_page, build_general_page, build_other_page
 from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
+from blink_call.modules.setting.subview import (
+    build_camera_page,
+    build_general_page,
+    build_other_page,
+)
 
 
 class SettingView(QWidget):
@@ -69,23 +73,11 @@ class SettingView(QWidget):
         self.camera_nav_row, self.camera_nav_btn, self.camera_nav_icon = self._create_nav_item("Camera")
         self.other_nav_row, self.other_nav_btn, self.other_nav_icon = self._create_nav_item("Others")
 
-        setting_pixmap = QPixmap("assets/icons/setting.png").scaled(
-            25, 25,
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
+        setting_pixmap = QPixmap("assets/icons/setting.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.general_nav_icon.setPixmap(setting_pixmap)
-        camera_pixmap = QPixmap("assets/icons/camera.png").scaled(
-            25, 25,
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
+        camera_pixmap = QPixmap("assets/icons/camera.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.camera_nav_icon.setPixmap(camera_pixmap)
-        others_pixmap = QPixmap("assets/icons/others.png").scaled(
-            25, 25,
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
+        others_pixmap = QPixmap("assets/icons/others.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.other_nav_icon.setPixmap(others_pixmap)
 
         self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.other_nav_row]
