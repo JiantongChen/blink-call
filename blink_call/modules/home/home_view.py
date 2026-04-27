@@ -71,13 +71,12 @@ class HomeView(QWidget):
         self.debug_info.setMaximumBlockCount(100)
 
         self.vm.frame_ready.connect(self._show_frame)
-        self.vm.status_changed.connect(self._show_status)
+        self.vm.camera_status.connect(self._show_status)
         self.vm.debug_message.connect(self._append_debug_message)
-        self.vm.debug_mode_changed.connect(self._set_debug_visible)
+        self.vm.debug_mode_state.connect(self._set_debug_visible)
         self.vm.debug_cleared.connect(self._clear_debug_message)
         self.vm.setting_vm.language_changed.connect(self._apply_language)
-        self.vm.local_service_active_changed.connect(self._set_service_mode)
-        self._set_debug_visible(bool(self.vm.setting_vm.get_config("debug_mode")))
+        self.vm.local_service_status.connect(self._set_service_mode)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -118,6 +117,8 @@ class HomeView(QWidget):
     def _set_service_mode(self, active: bool):
         self.setting_btn.setVisible(not active)
         self.exit_btn.setVisible(active)
+        if active:
+            self._set_debug_visible(False)
         self._position_exit_btn()
 
     def _position_exit_btn(self):
