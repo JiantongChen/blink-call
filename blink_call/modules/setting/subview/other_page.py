@@ -14,8 +14,8 @@ from PySide6.QtWidgets import (
 
 @dataclass
 class OtherPageWidgets:
-    reset_label: QLabel
-    reset_btn: QPushButton
+    reset_config_label: QLabel
+    reset_config_btn: QPushButton
 
 
 def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
@@ -36,17 +36,17 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     other_layout.setContentsMargins(16, 16, 16, 16)
     other_layout.setSpacing(16)
 
-    reset_btn_row = QHBoxLayout()
-    reset_btn_row.setSpacing(16)
-    reset_label = QLabel("Restore defaults")
-    reset_label.setObjectName("settingSubSectionTitle")
-    reset_btn = QPushButton("Restore defaults")
-    reset_btn.setObjectName("settingResetBtn")
-    reset_btn.setFixedWidth(260)
-    reset_btn_row.addWidget(reset_label)
-    reset_btn_row.addStretch()
-    reset_btn_row.addWidget(reset_btn)
-    other_layout.addLayout(reset_btn_row)
+    reset_config_btn_row = QHBoxLayout()
+    reset_config_btn_row.setSpacing(16)
+    reset_config_label = QLabel("Restore defaults")
+    reset_config_label.setObjectName("settingSubSectionTitle")
+    reset_config_btn = QPushButton("Restore defaults")
+    reset_config_btn.setObjectName("settingResetBtn")
+    reset_config_btn.setFixedWidth(260)
+    reset_config_btn_row.addWidget(reset_config_label)
+    reset_config_btn_row.addStretch()
+    reset_config_btn_row.addWidget(reset_config_btn)
+    other_layout.addLayout(reset_config_btn_row)
 
     divider = QFrame()
     divider.setObjectName("settingItemDivider")
@@ -54,4 +54,4 @@ def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
     other_layout.addWidget(divider)
     other_layout.addStretch()
 
-    return OtherPageWidgets(reset_label=reset_label, reset_btn=reset_btn)
+    return OtherPageWidgets(reset_config_label=reset_config_label, reset_config_btn=reset_config_btn)

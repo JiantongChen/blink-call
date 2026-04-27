@@ -109,17 +109,17 @@ class SettingView(QWidget):
         self._attach_widgets(build_other_page(self.content_stack))
 
         self.bind_combo(self.language_combo, "ui.language")
-        self.bind_spinbox(self.local_id, "camera.local_camera_id")
+        self.bind_spinbox(self.local_camera_id, "camera.local_camera_id")
         self.bind_line_edit(self.remote_ip, "camera.remote.ip")
         self.bind_spinbox(self.remote_port, "camera.remote.port")
         self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
         self.bind_spinbox(self.service_port, "local_service.port")
 
         radio_group = QButtonGroup(self)
-        radio_group.addButton(self.local_radio)
-        radio_group.addButton(self.remote_radio)
-        self.local_radio.setProperty("tag_value", "local")
-        self.remote_radio.setProperty("tag_value", "remote")
+        radio_group.addButton(self.camera_local_mode_radio)
+        radio_group.addButton(self.camera_remote_mode_radio)
+        self.camera_local_mode_radio.setProperty("tag_value", "local")
+        self.camera_remote_mode_radio.setProperty("tag_value", "remote")
         self.bind_radio_group(radio_group, "camera.mode")
 
         btn_row = QHBoxLayout()
@@ -133,7 +133,7 @@ class SettingView(QWidget):
 
         self.save_btn.clicked.connect(self.vm.save_config)
         self.close_btn.clicked.connect(self.vm.close)
-        self.reset_btn.clicked.connect(self._restore_default)
+        self.reset_config_btn.clicked.connect(self._restore_default)
         self.start_service_btn.clicked.connect(self._start_service)
         self.vm.close_requested.connect(self.hide)
 
@@ -194,8 +194,8 @@ class SettingView(QWidget):
 
     def _update_camera_mode_visibility(self, mode: str):
         is_local = mode != "remote"
-        self.local_row.setVisible(is_local)
-        self.remote_row.setVisible(not is_local)
+        self.local_mode_widgets_row.setVisible(is_local)
+        self.remote_mode_widgets_row.setVisible(not is_local)
 
     def bind_line_edit(self, edit, path: str):
         def on_changed(text):
@@ -223,13 +223,13 @@ class SettingView(QWidget):
         self._apply_language()
 
         if self.vm.get_config("camera.mode") == "remote":
-            self.remote_radio.setChecked(True)
+            self.camera_remote_mode_radio.setChecked(True)
             self._update_camera_mode_visibility("remote")
         else:
-            self.local_radio.setChecked(True)
+            self.camera_local_mode_radio.setChecked(True)
             self._update_camera_mode_visibility("local")
 
-        self.local_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
+        self.local_camera_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
         self.remote_port.setValue(int(self.vm.get_config("camera.remote.port") or 10000))
 
@@ -246,21 +246,21 @@ class SettingView(QWidget):
 
         self.language_label.setText(i18n["language"])
 
-        self.choose_label.setText(i18n["choose_label"])
-        self.local_radio.setText(i18n["local_radio"])
-        self.remote_radio.setText(i18n["remote_radio"])
-        self.local_id_label.setText(i18n["local_id_label"])
-        self.remote_title_label.setText(i18n["remote_address_label"])
+        self.choose_camera_source_label.setText(i18n["choose_camera_source_label"])
+        self.camera_local_mode_radio.setText(i18n["camera_local_mode_radio"])
+        self.camera_remote_mode_radio.setText(i18n["camera_remote_mode_radio"])
+        self.local_camera_id_label.setText(i18n["local_camera_id_label"])
+        self.remote_service_info_label.setText(i18n["remote_address_label"])
         self.remote_ip_label.setText(i18n["ip_label"])
         self.remote_port_label.setText(i18n["port_label"])
         self.start_service_btn.setText(i18n["start_service_btn"])
         self.start_service_label.setText(i18n["service_section_title"])
         self.service_section_label.setText(i18n["remote_camera_service_config"])
-        self.service_id_label.setText(i18n["local_id_label"])
+        self.service_camera_id_label.setText(i18n["local_camera_id_label"])
         self.service_port_label.setText(i18n["port_label"])
 
-        self.reset_btn.setText(i18n["reset_btn"])
-        self.reset_label.setText(i18n["reset_btn"])
+        self.reset_config_btn.setText(i18n["reset_config_btn"])
+        self.reset_config_label.setText(i18n["reset_config_btn"])
 
         self.save_btn.setText(i18n["save_btn"])
         self.close_btn.setText(i18n["close_btn"])

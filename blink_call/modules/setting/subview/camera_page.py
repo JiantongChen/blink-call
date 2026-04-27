@@ -19,20 +19,20 @@ from blink_call.widget import NoWheelSpinBox
 
 @dataclass
 class CameraPageWidgets:
-    choose_label: QLabel
-    local_radio: QRadioButton
-    remote_radio: QRadioButton
-    local_row: QWidget
-    local_id_label: QLabel
-    local_id: NoWheelSpinBox
-    remote_row: QWidget
-    remote_title_label: QLabel
+    choose_camera_source_label: QLabel
+    camera_local_mode_radio: QRadioButton
+    camera_remote_mode_radio: QRadioButton
+    local_mode_widgets_row: QWidget
+    local_camera_id_label: QLabel
+    local_camera_id: NoWheelSpinBox
+    remote_mode_widgets_row: QWidget
+    remote_service_info_label: QLabel
     remote_ip_label: QLabel
     remote_ip: QLineEdit
     remote_port_label: QLabel
     remote_port: NoWheelSpinBox
     service_section_label: QLabel
-    service_id_label: QLabel
+    service_camera_id_label: QLabel
     service_camera_id: NoWheelSpinBox
     service_port_label: QLabel
     service_port: NoWheelSpinBox
@@ -67,35 +67,35 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
 
     source_row = QHBoxLayout()
     source_row.setSpacing(16)
-    choose_label = QLabel("Choose camera source:")
-    choose_label.setObjectName("settingSubSectionTitle")
-    local_radio = QRadioButton("Local camera")
-    remote_radio = QRadioButton("Remote camera")
-    source_row.addWidget(choose_label)
+    choose_camera_source_label = QLabel("Choose camera source:")
+    choose_camera_source_label.setObjectName("settingSubSectionTitle")
+    camera_local_mode_radio = QRadioButton("Local camera")
+    camera_remote_mode_radio = QRadioButton("Remote camera")
+    source_row.addWidget(choose_camera_source_label)
     source_row.addStretch()
-    source_row.addWidget(local_radio)
-    source_row.addWidget(remote_radio)
+    source_row.addWidget(camera_local_mode_radio)
+    source_row.addWidget(camera_remote_mode_radio)
     camera_layout.addLayout(source_row)
 
-    local_row = QWidget()
-    local_id_row = QHBoxLayout(local_row)
-    local_id_row.setContentsMargins(0, 0, 0, 0)
-    local_id_row.setSpacing(16)
-    local_id_label = QLabel("ID")
-    local_id = NoWheelSpinBox()
-    local_id.setMinimum(0)
-    local_id.setMaximum(20)
-    local_id.setFixedWidth(120)
-    local_id_row.addWidget(local_id_label)
-    local_id_row.addStretch()
-    local_id_row.addWidget(local_id)
-    camera_layout.addWidget(local_row)
+    local_mode_widgets_row = QWidget()
+    local_camera_id_row = QHBoxLayout(local_mode_widgets_row)
+    local_camera_id_row.setContentsMargins(0, 0, 0, 0)
+    local_camera_id_row.setSpacing(16)
+    local_camera_id_label = QLabel("ID")
+    local_camera_id = NoWheelSpinBox()
+    local_camera_id.setMinimum(0)
+    local_camera_id.setMaximum(20)
+    local_camera_id.setFixedWidth(120)
+    local_camera_id_row.addWidget(local_camera_id_label)
+    local_camera_id_row.addStretch()
+    local_camera_id_row.addWidget(local_camera_id)
+    camera_layout.addWidget(local_mode_widgets_row)
 
-    remote_row = QWidget()
-    remote_layout = QHBoxLayout(remote_row)
+    remote_mode_widgets_row = QWidget()
+    remote_layout = QHBoxLayout(remote_mode_widgets_row)
     remote_layout.setContentsMargins(0, 0, 0, 0)
     remote_layout.setSpacing(16)
-    remote_title_label = QLabel("Remote")
+    remote_service_info_label = QLabel("Remote")
     remote_ip_label = QLabel("IP")
     remote_ip = QLineEdit()
     remote_ip.setPlaceholderText("IP")
@@ -105,13 +105,13 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     remote_port.setMaximum(65535)
     remote_ip.setFixedWidth(140)
     remote_port.setFixedWidth(120)
-    remote_layout.addWidget(remote_title_label)
+    remote_layout.addWidget(remote_service_info_label)
     remote_layout.addStretch()
     remote_layout.addWidget(remote_ip_label)
     remote_layout.addWidget(remote_ip)
     remote_layout.addWidget(remote_port_label)
     remote_layout.addWidget(remote_port)
-    camera_layout.addWidget(remote_row)
+    camera_layout.addWidget(remote_mode_widgets_row)
 
     camera_layout.addWidget(_build_divider())
 
@@ -130,7 +130,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     service_cfg_row = QHBoxLayout()
     service_cfg_row.setSpacing(16)
     service_section_label = QLabel("Local service config")
-    service_id_label = QLabel("Service ID")
+    service_camera_id_label = QLabel("Service ID")
     service_camera_id = NoWheelSpinBox()
     service_camera_id.setMinimum(0)
     service_camera_id.setMaximum(20)
@@ -142,7 +142,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     service_port.setFixedWidth(120)
     service_cfg_row.addWidget(service_section_label)
     service_cfg_row.addStretch()
-    service_cfg_row.addWidget(service_id_label)
+    service_cfg_row.addWidget(service_camera_id_label)
     service_cfg_row.addWidget(service_camera_id)
     service_cfg_row.addWidget(service_port_label)
     service_cfg_row.addWidget(service_port)
@@ -151,20 +151,20 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     camera_layout.addStretch()
 
     return CameraPageWidgets(
-        choose_label=choose_label,
-        local_radio=local_radio,
-        remote_radio=remote_radio,
-        local_row=local_row,
-        local_id_label=local_id_label,
-        local_id=local_id,
-        remote_row=remote_row,
-        remote_title_label=remote_title_label,
+        choose_camera_source_label=choose_camera_source_label,
+        camera_local_mode_radio=camera_local_mode_radio,
+        camera_remote_mode_radio=camera_remote_mode_radio,
+        local_mode_widgets_row=local_mode_widgets_row,
+        local_camera_id_label=local_camera_id_label,
+        local_camera_id=local_camera_id,
+        remote_mode_widgets_row=remote_mode_widgets_row,
+        remote_service_info_label=remote_service_info_label,
         remote_ip_label=remote_ip_label,
         remote_ip=remote_ip,
         remote_port_label=remote_port_label,
         remote_port=remote_port,
         service_section_label=service_section_label,
-        service_id_label=service_id_label,
+        service_camera_id_label=service_camera_id_label,
         service_camera_id=service_camera_id,
         service_port_label=service_port_label,
         service_port=service_port,
