@@ -46,6 +46,13 @@ class MainWindow(QWidget):
             vm.on_page_enter()
         self.stack.setCurrentWidget(view)
 
+    def closeEvent(self, event):
+        for view in self.views.values():
+            vm = getattr(view, "vm", None)
+            if hasattr(vm, "stop_all"):
+                vm.stop_all()
+        super().closeEvent(event)
+
     @staticmethod
     def get_version():
         with open("VERSION", encoding="utf-8") as f:

@@ -3,7 +3,7 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
-from blink_call.core.di import DI
+from blink_call.core.dependency_injection import DI
 from blink_call.core.navigation import Navigation
 from blink_call.core.theme_manager import ThemeManager
 from blink_call.main_window import MainWindow
