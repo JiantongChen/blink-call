@@ -5,7 +5,7 @@ import cv2
 
 
 class LocalCameraCapture:
-    def __init__(self, camera_id: int = 0, interval: float = 0.03):
+    def __init__(self, camera_id: int = 0, interval: float = 0.01):
         self.camera_id = camera_id
         self.interval = interval
 
