@@ -51,7 +51,7 @@ class HomeViewModel(QObject):
         self.infer_worker.show_debug_msg.connect(self.on_infer_debug)
 
         self.timer = QTimer(self)
-        self.timer.setInterval(33)
+        self.timer.setInterval(20)
         self.timer.timeout.connect(self.on_update_frame)
 
         self._initialize_vars()
@@ -71,13 +71,14 @@ class HomeViewModel(QObject):
     def on_page_enter(self):
         self._initialize_vars()
 
+        self.local_service_status.emit(False)
         self.clear_debug_msg.emit()
         self.debug_mode_state.emit(self.debug_mode)
+
+        self.stop_infer_worker()
         self.start_local_camera()
 
     def start_local_camera(self):
-        self.local_service_status.emit(False)
-
         if self.setting_model.get_config("camera.mode") == "remote":
             remote_ip = self.setting_vm.get_config("camera.remote.ip")
             remote_port = self.setting_vm.get_config("camera.remote.port")

@@ -57,7 +57,7 @@ def draw_text_block(img, text, color):
     font_scale = 0.5
     thickness = 1
 
-    margin = 10
+    margin = 20
     line_gap = 6
 
     h, w = img.shape[:2]
