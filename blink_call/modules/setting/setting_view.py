@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.modules.setting.subview import (
+    build_algorithm_page,
     build_camera_page,
     build_general_page,
     build_other_page,
@@ -72,20 +73,26 @@ class SettingView(QWidget):
 
         self.general_nav_row, self.general_nav_btn, self.general_nav_icon = self._create_nav_item("General")
         self.camera_nav_row, self.camera_nav_btn, self.camera_nav_icon = self._create_nav_item("Camera")
+        self.algorithm_nav_row, self.algorithm_nav_btn, self.algorithm_nav_icon = self._create_nav_item("Algorithm")
         self.other_nav_row, self.other_nav_btn, self.other_nav_icon = self._create_nav_item("Others")
 
         setting_pixmap = QPixmap("assets/icons/setting.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.general_nav_icon.setPixmap(setting_pixmap)
         camera_pixmap = QPixmap("assets/icons/camera.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.camera_nav_icon.setPixmap(camera_pixmap)
+        algorithm_pixmap = QPixmap("assets/icons/algorithm.png").scaled(
+            25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        self.algorithm_nav_icon.setPixmap(algorithm_pixmap)
         others_pixmap = QPixmap("assets/icons/others.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.other_nav_icon.setPixmap(others_pixmap)
 
-        self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.other_nav_row]
-        self.nav_icons = [self.general_nav_icon, self.camera_nav_icon, self.other_nav_icon]
+        self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.algorithm_nav_row, self.other_nav_row]
+        self.nav_icons = [self.general_nav_icon, self.camera_nav_icon, self.algorithm_nav_icon, self.other_nav_icon]
 
         left_nav_layout.addWidget(self.general_nav_row)
         left_nav_layout.addWidget(self.camera_nav_row)
+        left_nav_layout.addWidget(self.algorithm_nav_row)
         left_nav_layout.addWidget(self.other_nav_row)
         left_nav_layout.addStretch()
 
@@ -93,7 +100,8 @@ class SettingView(QWidget):
         nav_group.setExclusive(True)
         nav_group.addButton(self.general_nav_btn, 0)
         nav_group.addButton(self.camera_nav_btn, 1)
-        nav_group.addButton(self.other_nav_btn, 2)
+        nav_group.addButton(self.algorithm_nav_btn, 2)
+        nav_group.addButton(self.other_nav_btn, 3)
         nav_group.idClicked.connect(self.on_switch_setting_page)
 
         vline = QFrame()
@@ -107,6 +115,7 @@ class SettingView(QWidget):
 
         self._attach_widgets(build_general_page(self.content_stack))
         self._attach_widgets(build_camera_page(self.content_stack))
+        self._attach_widgets(build_algorithm_page(self.content_stack))
         self._attach_widgets(build_other_page(self.content_stack))
 
         self.bind_combo(self.language_combo, "ui.language")
@@ -136,6 +145,13 @@ class SettingView(QWidget):
         self.debug_log_save_yes_radio.setProperty("tag_value", True)
         self.debug_log_save_no_radio.setProperty("tag_value", False)
         self.bind_radio_group(debug_log_save_group, "debug_log.save_to_local", self._update_debug_logging_visibility)
+
+        algorithm_group = QButtonGroup(self)
+        algorithm_group.addButton(self.algorithm_enabled_radio)
+        algorithm_group.addButton(self.algorithm_disabled_radio)
+        self.algorithm_enabled_radio.setProperty("tag_value", True)
+        self.algorithm_disabled_radio.setProperty("tag_value", False)
+        self.bind_radio_group(algorithm_group, "algorithm.enabled")
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -247,6 +263,11 @@ class SettingView(QWidget):
         self.debug_log_path_value_label.setText(self.vm.get_config("debug_log.local_dir") or "")
         self._update_debug_logging_visibility()
 
+        if bool(self.vm.get_config("algorithm.enabled")):
+            self.algorithm_enabled_radio.setChecked(True)
+        else:
+            self.algorithm_disabled_radio.setChecked(True)
+
         self.local_camera_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
         self.remote_port.setValue(int(self.vm.get_config("camera.remote.port") or 10000))
@@ -260,6 +281,7 @@ class SettingView(QWidget):
         self.title_label.setText(i18n["title"])
         self.general_nav_btn.setText(i18n["general_title"])
         self.camera_nav_btn.setText(i18n["camera_title"])
+        self.algorithm_nav_btn.setText(i18n.get("algorithm_title", "Algorithm"))
         self.other_nav_btn.setText(i18n["other_title"])
 
         self.language_label.setText(i18n["language"])
@@ -285,6 +307,9 @@ class SettingView(QWidget):
         self.debug_log_save_no_radio.setText(i18n["debug_log_save_no_radio"])
         self.debug_log_path_label.setText(i18n["debug_log_path_label"])
         self.debug_log_path_choose_btn.setText(i18n["debug_log_path_choose_btn"])
+        self.algorithm_switch_label.setText(i18n.get("algorithm_switch_label", "Enable algorithm"))
+        self.algorithm_enabled_radio.setText(i18n.get("algorithm_enabled_radio", "On"))
+        self.algorithm_disabled_radio.setText(i18n.get("algorithm_disabled_radio", "Off"))
 
         self.reset_config_btn.setText(i18n["reset_config_btn"])
         self.reset_config_label.setText(i18n["reset_config_btn"])

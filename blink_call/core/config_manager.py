@@ -14,6 +14,7 @@ class ConfigManager:
             "ui": {"language": "zh"},
             "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
             "local_service": {"camera_id": 0, "port": 17925},
+            "algorithm": {"enabled": True},
             "debug_mode": False,
             "debug_log": {"save_to_local": False, "local_dir": default_log_dir},
         }

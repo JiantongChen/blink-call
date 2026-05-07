@@ -148,6 +148,9 @@ class HomeViewModel(QObject):
             self.show_debug_msg.emit(text)
 
     def start_infer_worker(self):
+        if not self.setting_vm.get_config("algorithm.enabled"):
+            return
+
         if not self.infer_worker.isRunning():
             self.infer_worker.start()
 
