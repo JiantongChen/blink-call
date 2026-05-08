@@ -45,7 +45,7 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     language_combo = QComboBox()
     language_combo.addItem("中文", "zh")
     language_combo.addItem("English", "en")
-    language_combo.setFixedWidth(220)
+    language_combo.setFixedSize(220, 40)
 
     language_row.addWidget(language_label)
     language_row.addStretch()

@@ -68,3 +68,22 @@ class Helper:
             return "127.0.0.1"
         finally:
             sock.close()
+
+    @classmethod
+    def image_cropping(self, image, bbox):
+        if image is None or bbox is None:
+            return None
+
+        h, w = image.shape[:2]
+        x1, y1, x2, y2 = bbox
+        x1 = max(0, min(w - 1, x1))
+        x2 = max(0, min(w - 1, x2))
+        y1 = max(0, min(h - 1, y1))
+        y2 = max(0, min(h - 1, y2))
+        left, right = min(x1, x2), max(x1, x2)
+        top, bottom = min(y1, y2), max(y1, y2)
+
+        if right - left < 2 or bottom - top < 2:
+            return None
+
+        return image[top:bottom, left:right]

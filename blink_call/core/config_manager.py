@@ -14,7 +14,18 @@ class ConfigManager:
             "ui": {"language": "zh"},
             "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
             "local_service": {"camera_id": 0, "port": 17925},
-            "algorithm": {"enabled": True},
+            "blink_call": {
+                "enabled": True,
+                "show_home_progress_bar": True,
+                "pattern": [
+                    {"state": "open", "duration_s": 2.0},
+                    {"state": "closed", "duration_s": 2.0},
+                    {"state": "open", "duration_s": 2.0},
+                    {"state": "closed", "duration_s": 2.0},
+                ],
+                "eye_region_detection_algorithm": {},
+                "eye_state_classification_algorithm": {},
+            },
             "debug_mode": False,
             "debug_log": {"save_to_local": False, "local_dir": default_log_dir},
         }

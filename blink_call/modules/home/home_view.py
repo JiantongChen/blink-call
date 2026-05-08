@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from blink_call.core.navigation import Navigation
 from blink_call.modules.home.home_viewmodel import HomeViewModel
 from blink_call.modules.setting.setting_view import SettingView
+from blink_call.widget import BlinkPatternProgressBar
 
 
 class HomeView(QWidget):
@@ -47,6 +48,8 @@ class HomeView(QWidget):
         self.video_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         layout.addWidget(self.video_label)
 
+        self.blink_progress_bar = BlinkPatternProgressBar(self)
+
         self.setting_btn = QPushButton(i18n["settings"], self)
         self.setting_btn.setObjectName("homeSettingBtn")
         self.setting_btn.setFixedSize(88, 36)
@@ -67,7 +70,6 @@ class HomeView(QWidget):
         self.debug_info = QPlainTextEdit(self)
         self.debug_info.setObjectName("homeDebugInfo")
         self.debug_info.setReadOnly(True)
-        self.debug_info.setVisible(False)
         self.debug_info.setMaximumBlockCount(100)
 
         self.vm.frame_ready.connect(self.on_show_frame)
@@ -77,6 +79,9 @@ class HomeView(QWidget):
         self.vm.clear_debug_msg.connect(self.on_clear_debug_msg)
         self.vm.setting_vm.language_changed.connect(self.on_apply_language)
         self.vm.local_service_status.connect(self.on_set_service_mode)
+        self.vm.blink_progress_updated.connect(self.on_blink_progress_updated)
+
+        self.is_service_mode = False
 
     def on_apply_language(self, language):
         i18n = self.TEXTS.get(language, self.TEXTS["zh"])
@@ -109,10 +114,9 @@ class HomeView(QWidget):
         self.video_label.setText(text)
 
     def on_set_service_mode(self, active: bool):
+        self.is_service_mode = active
         self.setting_btn.setVisible(not active)
         self.exit_btn.setVisible(active)
-        if active:
-            self.debug_info.setVisible(False)
 
     def on_set_debug_visible(self, visible: bool):
         self.debug_info.setVisible(visible)
@@ -139,11 +143,19 @@ class HomeView(QWidget):
         except OSError:
             return
 
+    def on_blink_progress_updated(self, data: dict):
+        visible = False if self.is_service_mode else data["visibility"]
+        self.blink_progress_bar.setVisible(visible)
+        if data["visibility"]:
+            self.blink_progress_bar.set_pattern(data["pattern"])
+            self.blink_progress_bar.set_progress_ratio(data["progress_ratio"])
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self._position_exit_btn()
         self._position_debug_info()
+        self._position_blink_progress_bar()
 
     def _position_exit_btn(self):
         x = (self.width() - self.exit_btn.width()) // 2
@@ -156,3 +168,13 @@ class HomeView(QWidget):
         x = self.width() - panel_width - 20
         y = 20
         self.debug_info.setGeometry(max(0, x), max(0, y), panel_width, panel_height)
+
+    def _position_blink_progress_bar(self):
+        margin = 20
+        bar_width = max(260, int(self.width() * 0.6))
+        bar_width = min(bar_width, self.width() - margin * 2)
+        bar_height = 24
+        x = (self.width() - bar_width) // 2
+        setting_center_y = self.setting_btn.y() + (self.setting_btn.height() // 2)
+        y = setting_center_y - (bar_height // 2)
+        self.blink_progress_bar.setGeometry(max(0, x), max(0, y), max(120, bar_width), bar_height)

@@ -15,6 +15,7 @@ class HomeViewModel(QObject):
     frame_ready = Signal(QImage)
     show_camera_status = Signal(str)
     local_service_status = Signal(bool)
+    blink_progress_updated = Signal(dict)
 
     debug_mode_state = Signal(bool)
     show_debug_msg = Signal(str)
@@ -70,6 +71,14 @@ class HomeViewModel(QObject):
 
     def on_page_enter(self):
         self._initialize_vars()
+        self.blink_progress_updated.emit(
+            {
+                "visibility": self.setting_vm.get_config("blink_call.enabled")
+                and self.setting_vm.get_config("blink_call.show_home_progress_bar"),
+                "progress_ratio": 0.0,
+                "pattern": self.setting_vm.get_config("blink_call.pattern"),
+            }
+        )
 
         self.local_service_status.emit(False)
         self.clear_debug_msg.emit()
@@ -113,12 +122,15 @@ class HomeViewModel(QObject):
 
             if elapsed >= self.stat_fps_interval:
                 ui_fps = self.ui_fps_counter / elapsed
-                self.show_debug_msg.emit(f"ui_frame_fps={ui_fps:.2f}")
+                self.show_debug_msg.emit(f"[UI] ui_frame_fps: {ui_fps:.2f}")
 
                 self.ui_fps_window_start = now
                 self.ui_fps_counter = 0
 
-            if isinstance(self.latest_infer_result, dict):
+            if (
+                isinstance(self.latest_infer_result, dict)
+                and int(time.time() * 1000) - self.latest_infer_result["timestamp_ms"] < 3000
+            ):
                 frame = draw_debug(frame, self.latest_infer_result)
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -134,6 +146,7 @@ class HomeViewModel(QObject):
         self.timer.stop()
         self.stop_infer_worker()
         self.local_service_status.emit(True)
+        self.debug_mode_state.emit(False)
 
         if ok:
             self.emit_show_camera_status("service_started_success", ip=ip, port=port)
@@ -142,16 +155,25 @@ class HomeViewModel(QObject):
 
     def on_infer_result(self, result):
         self.latest_infer_result = result
+        self.blink_progress_updated.emit(
+            {
+                "visibility": self.setting_vm.get_config("blink_call.enabled")
+                and self.setting_vm.get_config("blink_call.show_home_progress_bar"),
+                "progress_ratio": float(result.get("blink_progress_ratio", 0.0)),
+                "pattern": self.setting_vm.get_config("blink_call.pattern"),
+            }
+        )
 
     def on_infer_debug(self, text: str):
         if self.debug_mode:
             self.show_debug_msg.emit(text)
 
     def start_infer_worker(self):
-        if not self.setting_vm.get_config("algorithm.enabled"):
+        if not bool(self.setting_vm.get_config("blink_call.enabled")):
             return
 
         if not self.infer_worker.isRunning():
+            self.infer_worker.initialize_vars(self.setting_vm.get_config("blink_call"))
             self.infer_worker.start()
 
     def stop_infer_worker(self):

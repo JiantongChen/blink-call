@@ -1,6 +1,6 @@
-from blink_call.modules.setting.subview.algorithm_page import (
-    AlgorithmPageWidgets,
-    build_algorithm_page,
+from blink_call.modules.setting.subview.blink_call_page import (
+    BlinkCallPageWidgets,
+    build_blink_call_page,
 )
 from blink_call.modules.setting.subview.camera_page import (
     CameraPageWidgets,
@@ -18,10 +18,10 @@ from blink_call.modules.setting.subview.other_page import (
 __all__ = [
     "GeneralPageWidgets",
     "CameraPageWidgets",
-    "AlgorithmPageWidgets",
+    "BlinkCallPageWidgets",
     "OtherPageWidgets",
     "build_general_page",
     "build_camera_page",
-    "build_algorithm_page",
+    "build_blink_call_page",
     "build_other_page",
 ]

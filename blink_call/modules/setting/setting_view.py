@@ -2,6 +2,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QComboBox,
+    QDoubleSpinBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -18,7 +20,7 @@ from PySide6.QtWidgets import (
 from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.modules.setting.subview import (
-    build_algorithm_page,
+    build_blink_call_page,
     build_camera_page,
     build_general_page,
     build_other_page,
@@ -31,6 +33,7 @@ class SettingView(QWidget):
     def __init__(self, vm: SettingViewModel, parent=None):
         super().__init__(parent)
         self.vm = vm
+        self.blink_call_sequence_rows = []
 
         self.setObjectName("settingOverlay")
 
@@ -73,26 +76,26 @@ class SettingView(QWidget):
 
         self.general_nav_row, self.general_nav_btn, self.general_nav_icon = self._create_nav_item("General")
         self.camera_nav_row, self.camera_nav_btn, self.camera_nav_icon = self._create_nav_item("Camera")
-        self.algorithm_nav_row, self.algorithm_nav_btn, self.algorithm_nav_icon = self._create_nav_item("Algorithm")
+        self.blink_call_nav_row, self.blink_call_nav_btn, self.blink_call_nav_icon = self._create_nav_item("Blink Call")
         self.other_nav_row, self.other_nav_btn, self.other_nav_icon = self._create_nav_item("Others")
 
         setting_pixmap = QPixmap("assets/icons/setting.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.general_nav_icon.setPixmap(setting_pixmap)
         camera_pixmap = QPixmap("assets/icons/camera.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.camera_nav_icon.setPixmap(camera_pixmap)
-        algorithm_pixmap = QPixmap("assets/icons/algorithm.png").scaled(
+        blink_call_pixmap = QPixmap("assets/icons/algorithm.png").scaled(
             25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
-        self.algorithm_nav_icon.setPixmap(algorithm_pixmap)
+        self.blink_call_nav_icon.setPixmap(blink_call_pixmap)
         others_pixmap = QPixmap("assets/icons/others.png").scaled(25, 25, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.other_nav_icon.setPixmap(others_pixmap)
 
-        self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.algorithm_nav_row, self.other_nav_row]
-        self.nav_icons = [self.general_nav_icon, self.camera_nav_icon, self.algorithm_nav_icon, self.other_nav_icon]
+        self.nav_rows = [self.general_nav_row, self.camera_nav_row, self.blink_call_nav_row, self.other_nav_row]
+        self.nav_icons = [self.general_nav_icon, self.camera_nav_icon, self.blink_call_nav_icon, self.other_nav_icon]
 
         left_nav_layout.addWidget(self.general_nav_row)
         left_nav_layout.addWidget(self.camera_nav_row)
-        left_nav_layout.addWidget(self.algorithm_nav_row)
+        left_nav_layout.addWidget(self.blink_call_nav_row)
         left_nav_layout.addWidget(self.other_nav_row)
         left_nav_layout.addStretch()
 
@@ -100,7 +103,7 @@ class SettingView(QWidget):
         nav_group.setExclusive(True)
         nav_group.addButton(self.general_nav_btn, 0)
         nav_group.addButton(self.camera_nav_btn, 1)
-        nav_group.addButton(self.algorithm_nav_btn, 2)
+        nav_group.addButton(self.blink_call_nav_btn, 2)
         nav_group.addButton(self.other_nav_btn, 3)
         nav_group.idClicked.connect(self.on_switch_setting_page)
 
@@ -115,7 +118,7 @@ class SettingView(QWidget):
 
         self._attach_widgets(build_general_page(self.content_stack))
         self._attach_widgets(build_camera_page(self.content_stack))
-        self._attach_widgets(build_algorithm_page(self.content_stack))
+        self._attach_widgets(build_blink_call_page(self.content_stack))
         self._attach_widgets(build_other_page(self.content_stack))
 
         self.bind_combo(self.language_combo, "ui.language")
@@ -125,12 +128,12 @@ class SettingView(QWidget):
         self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
         self.bind_spinbox(self.service_port, "local_service.port")
 
-        radio_group = QButtonGroup(self)
-        radio_group.addButton(self.camera_local_mode_radio)
-        radio_group.addButton(self.camera_remote_mode_radio)
+        camera_mode_group = QButtonGroup(self)
+        camera_mode_group.addButton(self.camera_local_mode_radio)
+        camera_mode_group.addButton(self.camera_remote_mode_radio)
         self.camera_local_mode_radio.setProperty("tag_value", "local")
         self.camera_remote_mode_radio.setProperty("tag_value", "remote")
-        self.bind_radio_group(radio_group, "camera.mode", self._update_camera_mode_visibility)
+        self.bind_radio_group(camera_mode_group, "camera.mode", self._update_camera_mode_visibility)
 
         debug_mode_group = QButtonGroup(self)
         debug_mode_group.addButton(self.debug_mode_on_radio)
@@ -146,12 +149,21 @@ class SettingView(QWidget):
         self.debug_log_save_no_radio.setProperty("tag_value", False)
         self.bind_radio_group(debug_log_save_group, "debug_log.save_to_local", self._update_debug_logging_visibility)
 
-        algorithm_group = QButtonGroup(self)
-        algorithm_group.addButton(self.algorithm_enabled_radio)
-        algorithm_group.addButton(self.algorithm_disabled_radio)
-        self.algorithm_enabled_radio.setProperty("tag_value", True)
-        self.algorithm_disabled_radio.setProperty("tag_value", False)
-        self.bind_radio_group(algorithm_group, "algorithm.enabled")
+        blink_call_group = QButtonGroup(self)
+        blink_call_group.addButton(self.blink_call_enabled_radio)
+        blink_call_group.addButton(self.blink_call_disabled_radio)
+        self.blink_call_enabled_radio.setProperty("tag_value", True)
+        self.blink_call_disabled_radio.setProperty("tag_value", False)
+        self.bind_radio_group(blink_call_group, "blink_call.enabled", self._update_blink_call_sequence_visibility)
+
+        blink_call_progress_group = QButtonGroup(self)
+        blink_call_progress_group.addButton(self.blink_call_progress_show_radio)
+        blink_call_progress_group.addButton(self.blink_call_progress_hide_radio)
+        self.blink_call_progress_show_radio.setProperty("tag_value", True)
+        self.blink_call_progress_hide_radio.setProperty("tag_value", False)
+        self.bind_radio_group(blink_call_progress_group, "blink_call.show_home_progress_bar")
+
+        self.blink_call_add_sequence_btn.clicked.connect(self.on_add_blink_call_step)
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -242,7 +254,6 @@ class SettingView(QWidget):
         self.language_combo.blockSignals(True)
         self.language_combo.setCurrentIndex(0 if language_idx < 0 else language_idx)
         self.language_combo.blockSignals(False)
-        self._apply_language()
 
         if self.vm.get_config("camera.mode") == "remote":
             self.camera_remote_mode_radio.setChecked(True)
@@ -263,10 +274,25 @@ class SettingView(QWidget):
         self.debug_log_path_value_label.setText(self.vm.get_config("debug_log.local_dir") or "")
         self._update_debug_logging_visibility()
 
-        if bool(self.vm.get_config("algorithm.enabled")):
-            self.algorithm_enabled_radio.setChecked(True)
+        if bool(self.vm.get_config("blink_call.enabled")):
+            self.blink_call_enabled_radio.setChecked(True)
         else:
-            self.algorithm_disabled_radio.setChecked(True)
+            self.blink_call_disabled_radio.setChecked(True)
+
+        if bool(self.vm.get_config("blink_call.show_home_progress_bar")):
+            self.blink_call_progress_show_radio.setChecked(True)
+        else:
+            self.blink_call_progress_hide_radio.setChecked(True)
+
+        for row in self.blink_call_sequence_rows:
+            row["widget"].deleteLater()
+        self.blink_call_sequence_rows.clear()
+
+        pattern = self._normalize_blink_call_pattern(self.vm.get_config("blink_call.pattern"))
+        for item in pattern:
+            self._add_blink_call_sequence_row(item["state"], float(item["duration_s"]), emit_change=False)
+
+        self._update_blink_call_sequence_visibility()
 
         self.local_camera_id.setValue(int(self.vm.get_config("camera.local_camera_id") or 0))
         self.remote_ip.setText(self.vm.get_config("camera.remote.ip") or "")
@@ -275,13 +301,15 @@ class SettingView(QWidget):
         self.service_camera_id.setValue(int(self.vm.get_config("local_service.camera_id") or 0))
         self.service_port.setValue(int(self.vm.get_config("local_service.port") or 10000))
 
+        self._apply_language()
+
     def _apply_language(self):
         i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
 
         self.title_label.setText(i18n["title"])
         self.general_nav_btn.setText(i18n["general_title"])
         self.camera_nav_btn.setText(i18n["camera_title"])
-        self.algorithm_nav_btn.setText(i18n.get("algorithm_title", "Algorithm"))
+        self.blink_call_nav_btn.setText(i18n["blink_call_title"])
         self.other_nav_btn.setText(i18n["other_title"])
 
         self.language_label.setText(i18n["language"])
@@ -299,6 +327,21 @@ class SettingView(QWidget):
         self.service_camera_id_label.setText(i18n["local_camera_id_label"])
         self.service_port_label.setText(i18n["port_label"])
 
+        self.blink_call_switch_label.setText(i18n["blink_call_enable_label"])
+        self.blink_call_enabled_radio.setText(i18n["blink_call_enabled_radio"])
+        self.blink_call_disabled_radio.setText(i18n["blink_call_disabled_radio"])
+        self.blink_call_progress_label.setText(i18n["blink_call_progress_label"])
+        self.blink_call_progress_show_radio.setText(i18n["blink_call_progress_show_radio"])
+        self.blink_call_progress_hide_radio.setText(i18n["blink_call_progress_hide_radio"])
+        self.blink_call_sequence_label.setText(i18n["blink_call_sequence_label"])
+        self.blink_call_add_sequence_btn.setText(i18n["blink_call_add_step_btn"])
+
+        for row in self.blink_call_sequence_rows:
+            row["state_combo"].setItemText(0, i18n["blink_call_state_open"])
+            row["state_combo"].setItemText(1, i18n["blink_call_state_closed"])
+            row["duration_label"].setText(i18n["blink_call_duration_label"])
+            row["remove_btn"].setText(i18n["blink_call_remove_step_btn"])
+
         self.debug_mode_label.setText(i18n["debug_mode_label"])
         self.debug_mode_on_radio.setText(i18n["debug_mode_on_radio"])
         self.debug_mode_off_radio.setText(i18n["debug_mode_off_radio"])
@@ -307,15 +350,118 @@ class SettingView(QWidget):
         self.debug_log_save_no_radio.setText(i18n["debug_log_save_no_radio"])
         self.debug_log_path_label.setText(i18n["debug_log_path_label"])
         self.debug_log_path_choose_btn.setText(i18n["debug_log_path_choose_btn"])
-        self.algorithm_switch_label.setText(i18n.get("algorithm_switch_label", "Enable algorithm"))
-        self.algorithm_enabled_radio.setText(i18n.get("algorithm_enabled_radio", "On"))
-        self.algorithm_disabled_radio.setText(i18n.get("algorithm_disabled_radio", "Off"))
 
         self.reset_config_btn.setText(i18n["reset_config_btn"])
         self.reset_config_label.setText(i18n["reset_config_btn"])
 
         self.save_btn.setText(i18n["save_btn"])
         self.close_btn.setText(i18n["close_btn"])
+
+    def _normalize_blink_call_pattern(self, pattern):
+        normalized = []
+        for item in pattern if isinstance(pattern, list) else []:
+            if not isinstance(item, dict):
+                continue
+            state = item.get("state")
+            duration_s = item.get("duration_s")
+            if state not in {"open", "closed"}:
+                continue
+            try:
+                duration_s = float(duration_s)
+            except (TypeError, ValueError):
+                continue
+            normalized.append({"state": state, "duration_s": duration_s})
+
+        return normalized
+
+    def _add_blink_call_sequence_row(self, state: str = "open", duration_s: float = 1.0, emit_change: bool = True):
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(8)
+
+        state_combo = QComboBox()
+        state_combo.addItem(i18n["blink_call_state_open"], "open")
+        state_combo.addItem(i18n["blink_call_state_closed"], "closed")
+        idx = state_combo.findData(state)
+        state_combo.setCurrentIndex(0 if idx < 0 else idx)
+        state_combo.setFixedSize(140, 40)
+
+        duration_label = QLabel(i18n["blink_call_duration_label"])
+        duration_label.setObjectName("settingSubSectionTitle")
+        duration_spin = QDoubleSpinBox()
+        duration_spin.setDecimals(1)
+        duration_spin.setSingleStep(0.5)
+        duration_spin.setRange(0.5, 5.0)
+        duration_spin.setValue(min(5.0, max(0.5, duration_s)))
+        duration_spin.setFixedSize(120, 42)
+
+        remove_btn = QPushButton(i18n["blink_call_remove_step_btn"])
+        remove_btn.setFixedWidth(100)
+
+        row_layout.addWidget(state_combo)
+        row_layout.addWidget(duration_label)
+        row_layout.addWidget(duration_spin)
+        row_layout.addStretch()
+        row_layout.addWidget(remove_btn)
+
+        row = {
+            "widget": row_widget,
+            "state_combo": state_combo,
+            "duration_label": duration_label,
+            "duration_spin": duration_spin,
+            "remove_btn": remove_btn,
+        }
+        self.blink_call_sequence_rows.append(row)
+        self.blink_call_sequence_rows_layout.addWidget(row_widget)
+
+        state_combo.currentIndexChanged.connect(self._save_blink_call_pattern)
+        duration_spin.valueChanged.connect(self._save_blink_call_pattern)
+        remove_btn.clicked.connect(lambda: self._remove_blink_call_sequence_row(row_widget))
+
+        self._refresh_blink_call_remove_buttons()
+        if emit_change:
+            self._save_blink_call_pattern()
+
+    def _remove_blink_call_sequence_row(self, row_widget: QWidget):
+        if len(self.blink_call_sequence_rows) <= 1:
+            return
+
+        remove_idx = -1
+        for idx, row in enumerate(self.blink_call_sequence_rows):
+            if row["widget"] is row_widget:
+                remove_idx = idx
+                break
+        if remove_idx < 0:
+            return
+
+        row = self.blink_call_sequence_rows.pop(remove_idx)
+        row["widget"].deleteLater()
+        self._refresh_blink_call_remove_buttons()
+        self._save_blink_call_pattern()
+
+    def _refresh_blink_call_remove_buttons(self):
+        enable_remove = len(self.blink_call_sequence_rows) > 1
+        for row in self.blink_call_sequence_rows:
+            row["remove_btn"].setVisible(enable_remove)
+            row["remove_btn"].setEnabled(enable_remove)
+
+    def _save_blink_call_pattern(self):
+        sequence = []
+        for row in self.blink_call_sequence_rows:
+            sequence.append(
+                {
+                    "state": row["state_combo"].currentData(),
+                    "duration_s": float(row["duration_spin"].value()),
+                }
+            )
+
+        self.vm.set_config("blink_call.pattern", self._normalize_blink_call_pattern(sequence))
+
+    def on_add_blink_call_step(self):
+        self._add_blink_call_sequence_row("open", 1.0, emit_change=True)
 
     def on_start_service(self):
         self.vm.on_start_local_service()
@@ -362,6 +508,13 @@ class SettingView(QWidget):
 
         self.debug_log_save_widgets_row.setVisible(is_debug_on)
         self.debug_log_path_widgets_row.setVisible(is_debug_on and is_save_local)
+
+    def _update_blink_call_sequence_visibility(self, _value=None):
+        enabled = bool(self.blink_call_enabled_radio.isChecked())
+        self.blink_call_progress_widgets_row.setVisible(enabled)
+        self.blink_call_progress_divider_line.setVisible(enabled)
+        self.blink_call_sequence_rows_host.setVisible(enabled)
+        self.blink_call_add_sequence_btn.setVisible(enabled)
 
     def showEvent(self, event):
         self.refresh_from_model()
