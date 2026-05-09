@@ -17,6 +17,12 @@ class ConfigManager:
             "blink_call": {
                 "enabled": True,
                 "show_home_progress_bar": True,
+                "audio": {
+                    "enabled": True,
+                    "file": "ring_01.wav",
+                    "volume": 100,
+                    "play_duration_s": 60,
+                },
                 "pattern": [
                     {"state": "open", "duration_s": 2.0},
                     {"state": "closed", "duration_s": 2.0},

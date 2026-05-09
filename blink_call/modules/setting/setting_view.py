@@ -1,9 +1,11 @@
-from PySide6.QtCore import Qt, Signal
+from pathlib import Path
+
+from PySide6.QtCore import Qt, QUrl, Signal
 from PySide6.QtGui import QPixmap
+from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -25,6 +27,7 @@ from blink_call.modules.setting.subview import (
     build_general_page,
     build_other_page,
 )
+from blink_call.widget import NoWheelSpinBox
 
 
 class SettingView(QWidget):
@@ -34,6 +37,9 @@ class SettingView(QWidget):
         super().__init__(parent)
         self.vm = vm
         self.blink_call_sequence_rows = []
+        self.blink_call_audio_file_values = [f"ring_{i:02d}.wav" for i in range(1, 11)]
+        self.blink_call_audio_duration_values = [10, 30, 60, 300, 600, 1800, 3600, -1]
+        self._preview_sound = QSoundEffect(self)
 
         self.setObjectName("settingOverlay")
 
@@ -127,6 +133,9 @@ class SettingView(QWidget):
         self.bind_spinbox(self.remote_port, "camera.remote.port")
         self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
         self.bind_spinbox(self.service_port, "local_service.port")
+        self.bind_combo(self.blink_call_audio_file_combo, "blink_call.audio.file")
+        self.bind_combo(self.blink_call_audio_duration_combo, "blink_call.audio.play_duration_s")
+        self.bind_slider(self.blink_call_audio_volume_slider, "blink_call.audio.volume")
 
         camera_mode_group = QButtonGroup(self)
         camera_mode_group.addButton(self.camera_local_mode_radio)
@@ -163,7 +172,23 @@ class SettingView(QWidget):
         self.blink_call_progress_hide_radio.setProperty("tag_value", False)
         self.bind_radio_group(blink_call_progress_group, "blink_call.show_home_progress_bar")
 
+        blink_call_audio_group = QButtonGroup(self)
+        blink_call_audio_group.addButton(self.blink_call_audio_enable_on_radio)
+        blink_call_audio_group.addButton(self.blink_call_audio_enable_off_radio)
+        self.blink_call_audio_enable_on_radio.setProperty("tag_value", True)
+        self.blink_call_audio_enable_off_radio.setProperty("tag_value", False)
+        self.bind_radio_group(
+            blink_call_audio_group, "blink_call.audio.enabled", self._update_blink_call_audio_visibility
+        )
+
         self.blink_call_add_sequence_btn.clicked.connect(self.on_add_blink_call_step)
+        self.blink_call_audio_preview_btn.clicked.connect(self.on_preview_blink_call_audio)
+        self.blink_call_audio_volume_slider.valueChanged.connect(self._update_blink_call_audio_volume_text)
+
+        for idx, file_name in enumerate(self.blink_call_audio_file_values, start=1):
+            self.blink_call_audio_file_combo.addItem(f"Audio {idx}", file_name)
+        for duration_s in self.blink_call_audio_duration_values:
+            self.blink_call_audio_duration_combo.addItem(str(duration_s), duration_s)
 
         btn_row = QHBoxLayout()
         self.save_btn = QPushButton("Save settings")
@@ -182,7 +207,7 @@ class SettingView(QWidget):
         self.vm.close_requested.connect(self.hide)
 
         self.on_switch_setting_page(0)
-        self.refresh_from_model()
+        self.refresh_from_local_config()
 
     def _create_nav_item(self, text: str):
         row = QWidget()
@@ -249,7 +274,13 @@ class SettingView(QWidget):
 
         spinbox.valueChanged.connect(on_changed)
 
-    def refresh_from_model(self):
+    def bind_slider(self, slider, path: str):
+        def on_changed(value: int):
+            self.vm.set_config(path, int(value))
+
+        slider.valueChanged.connect(on_changed)
+
+    def refresh_from_local_config(self):
         language_idx = self.language_combo.findData(self.vm.get_config("ui.language"))
         self.language_combo.blockSignals(True)
         self.language_combo.setCurrentIndex(0 if language_idx < 0 else language_idx)
@@ -283,6 +314,29 @@ class SettingView(QWidget):
             self.blink_call_progress_show_radio.setChecked(True)
         else:
             self.blink_call_progress_hide_radio.setChecked(True)
+
+        if bool(self.vm.get_config("blink_call.audio.enabled")):
+            self.blink_call_audio_enable_on_radio.setChecked(True)
+        else:
+            self.blink_call_audio_enable_off_radio.setChecked(True)
+
+        audio_file_idx = self.blink_call_audio_file_combo.findData(self.vm.get_config("blink_call.audio.file"))
+        self.blink_call_audio_file_combo.blockSignals(True)
+        self.blink_call_audio_file_combo.setCurrentIndex(0 if audio_file_idx < 0 else audio_file_idx)
+        self.blink_call_audio_file_combo.blockSignals(False)
+
+        audio_duration_idx = self.blink_call_audio_duration_combo.findData(
+            self.vm.get_config("blink_call.audio.play_duration_s")
+        )
+        self.blink_call_audio_duration_combo.blockSignals(True)
+        self.blink_call_audio_duration_combo.setCurrentIndex(0 if audio_duration_idx < 0 else audio_duration_idx)
+        self.blink_call_audio_duration_combo.blockSignals(False)
+
+        audio_volume = int(self.vm.get_config("blink_call.audio.volume"))
+        self.blink_call_audio_volume_slider.blockSignals(True)
+        self.blink_call_audio_volume_slider.setValue(max(0, min(100, audio_volume)))
+        self.blink_call_audio_volume_slider.blockSignals(False)
+        self._update_blink_call_audio_volume_text(self.blink_call_audio_volume_slider.value())
 
         for row in self.blink_call_sequence_rows:
             row["widget"].deleteLater()
@@ -335,6 +389,29 @@ class SettingView(QWidget):
         self.blink_call_progress_hide_radio.setText(i18n["blink_call_progress_hide_radio"])
         self.blink_call_sequence_label.setText(i18n["blink_call_sequence_label"])
         self.blink_call_add_sequence_btn.setText(i18n["blink_call_add_step_btn"])
+        self.blink_call_audio_enable_label.setText(i18n["blink_call_audio_enable_label"])
+        self.blink_call_audio_enable_on_radio.setText(i18n["blink_call_audio_enable_on_radio"])
+        self.blink_call_audio_enable_off_radio.setText(i18n["blink_call_audio_enable_off_radio"])
+        self.blink_call_audio_file_label.setText(i18n["blink_call_audio_file_label"])
+        self.blink_call_audio_preview_btn.setText(i18n["blink_call_audio_preview_btn"])
+        self.blink_call_audio_volume_label.setText(i18n["blink_call_audio_volume_label"])
+        self.blink_call_audio_duration_label.setText(i18n["blink_call_audio_duration_label"])
+
+        for idx in range(len(self.blink_call_audio_file_values)):
+            self.blink_call_audio_file_combo.setItemText(idx, f'{i18n["blink_call_audio_option_prefix"]} {idx + 1}')
+
+        duration_keys = [
+            "blink_call_audio_duration_10s",
+            "blink_call_audio_duration_30s",
+            "blink_call_audio_duration_1m",
+            "blink_call_audio_duration_5m",
+            "blink_call_audio_duration_10m",
+            "blink_call_audio_duration_30m",
+            "blink_call_audio_duration_1h",
+            "blink_call_audio_duration_infinite",
+        ]
+        for idx, key in enumerate(duration_keys):
+            self.blink_call_audio_duration_combo.setItemText(idx, i18n[key])
 
         for row in self.blink_call_sequence_rows:
             row["state_combo"].setItemText(0, i18n["blink_call_state_open"])
@@ -391,12 +468,11 @@ class SettingView(QWidget):
 
         duration_label = QLabel(i18n["blink_call_duration_label"])
         duration_label.setObjectName("settingSubSectionTitle")
-        duration_spin = QDoubleSpinBox()
+        duration_spin = NoWheelSpinBox()
         duration_spin.setDecimals(1)
         duration_spin.setSingleStep(0.5)
         duration_spin.setRange(0.5, 5.0)
         duration_spin.setValue(min(5.0, max(0.5, duration_s)))
-        duration_spin.setFixedSize(120, 42)
 
         remove_btn = QPushButton(i18n["blink_call_remove_step_btn"])
         remove_btn.setFixedWidth(100)
@@ -497,6 +573,24 @@ class SettingView(QWidget):
         self.vm.set_config("debug_log.local_dir", selected)
         self.debug_log_path_value_label.setText(selected)
 
+    def on_preview_blink_call_audio(self):
+        file_name = self.blink_call_audio_file_combo.currentData()
+        if not isinstance(file_name, str) or not file_name.strip():
+            return
+
+        audio_path = Path("assets") / "audio" / file_name
+        if not audio_path.exists():
+            return
+
+        self._preview_sound.stop()
+        self._preview_sound.setSource(QUrl.fromLocalFile(str(audio_path.resolve())))
+        self._preview_sound.setLoopCount(1)
+        self._preview_sound.setVolume(float(self.blink_call_audio_volume_slider.value()) / 100.0)
+        self._preview_sound.play()
+
+    def _update_blink_call_audio_volume_text(self, value: int):
+        self.blink_call_audio_volume_value_label.setText(f"{int(value)}%")
+
     def _update_camera_mode_visibility(self, mode: str):
         is_local = mode != "remote"
         self.local_mode_widgets_row.setVisible(is_local)
@@ -513,13 +607,30 @@ class SettingView(QWidget):
         enabled = bool(self.blink_call_enabled_radio.isChecked())
         self.blink_call_progress_widgets_row.setVisible(enabled)
         self.blink_call_progress_divider_line.setVisible(enabled)
+        self.blink_call_sequence_label.setVisible(enabled)
         self.blink_call_sequence_rows_host.setVisible(enabled)
         self.blink_call_add_sequence_btn.setVisible(enabled)
+        self.blink_call_sequence_divider_line.setVisible(enabled)
+        self.blink_call_audio_enable_widgets_row.setVisible(enabled)
+        self.blink_call_audio_enable_divider_line.setVisible(enabled)
+        self._update_blink_call_audio_visibility()
+
+    def _update_blink_call_audio_visibility(self, _value=None):
+        enabled = bool(self.blink_call_enabled_radio.isChecked())
+        audio_enabled = bool(self.blink_call_audio_enable_on_radio.isChecked())
+        show_audio_settings = enabled and audio_enabled
+        self.blink_call_audio_file_widgets_row.setVisible(show_audio_settings)
+        self.blink_call_audio_file_divider_line.setVisible(show_audio_settings)
+        self.blink_call_audio_volume_widgets_row.setVisible(show_audio_settings)
+        self.blink_call_audio_volume_divider_line.setVisible(show_audio_settings)
+        self.blink_call_audio_duration_widgets_row.setVisible(show_audio_settings)
+        self.blink_call_audio_duration_divider_line.setVisible(show_audio_settings)
 
     def showEvent(self, event):
-        self.refresh_from_model()
+        self.refresh_from_local_config()
         super().showEvent(event)
 
     def hideEvent(self, event):
+        self._preview_sound.stop()
         self.close_setting_popup.emit()
         super().hideEvent(event)

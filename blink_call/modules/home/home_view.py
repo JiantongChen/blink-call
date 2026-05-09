@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QLabel,
@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 from blink_call.core.navigation import Navigation
 from blink_call.modules.home.home_viewmodel import HomeViewModel
 from blink_call.modules.setting.setting_view import SettingView
-from blink_call.widget import BlinkPatternProgressBar
+from blink_call.widget import BlinkPatternProgressBar, CallBlockOverlay
 
 
 class HomeView(QWidget):
@@ -23,12 +23,16 @@ class HomeView(QWidget):
         "zh": {
             "settings": "设置",
             "exit": "退出",
+            "calling_btn": "正在呼叫中...\n点击此按钮关闭",
         },
         "en": {
             "settings": "Settings",
             "exit": "Exit",
+            "calling_btn": "Calling...\nTap to stop",
         },
     }
+
+    is_setting_popup = Signal(bool)
 
     def __init__(self, vm: HomeViewModel, nav: Navigation):
         super().__init__()
@@ -72,6 +76,15 @@ class HomeView(QWidget):
         self.debug_info.setReadOnly(True)
         self.debug_info.setMaximumBlockCount(100)
 
+        self.call_block_overlay = CallBlockOverlay(self)
+        self.call_block_overlay.setObjectName("homeCallBlockOverlay")
+        self.call_block_overlay.hide()
+
+        self.call_close_btn = QPushButton("", self.call_block_overlay)
+        self.call_close_btn.setObjectName("homeCallCloseBtn")
+        self.call_close_btn.clicked.connect(self.vm.stop_call_audio)
+
+        self.is_setting_popup.connect(self.vm.on_listen_setting_popup)
         self.vm.frame_ready.connect(self.on_show_frame)
         self.vm.show_camera_status.connect(self.on_show_camera_status)
         self.vm.debug_mode_state.connect(self.on_set_debug_visible)
@@ -80,23 +93,28 @@ class HomeView(QWidget):
         self.vm.setting_vm.language_changed.connect(self.on_apply_language)
         self.vm.local_service_status.connect(self.on_set_service_mode)
         self.vm.blink_progress_updated.connect(self.on_blink_progress_updated)
+        self.vm.blink_call_alert_visibility.connect(self.on_blink_call_alert_visibility)
 
         self.is_service_mode = False
+        self.on_apply_language(self.vm.setting_vm.get_config("ui.language"))
 
     def on_apply_language(self, language):
         i18n = self.TEXTS.get(language, self.TEXTS["zh"])
         self.setting_btn.setText(i18n["settings"])
         self.exit_btn.setText(i18n["exit"])
+        self.call_close_btn.setText(i18n["calling_btn"])
 
     def on_open_setting_popup(self):
         self.setting_btn.setVisible(False)
-        self.setting_popup.refresh_from_model()
+        self.setting_popup.refresh_from_local_config()
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self.setting_popup.show()
         self.setting_popup.raise_()
+        self.is_setting_popup.emit(True)
 
     def on_close_setting_popup(self):
         self.setting_btn.setVisible(True)
+        self.is_setting_popup.emit(False)
 
     def on_show_frame(self, image):
         pixmap = QPixmap.fromImage(image)
@@ -150,12 +168,25 @@ class HomeView(QWidget):
             self.blink_progress_bar.set_pattern(data["pattern"])
             self.blink_progress_bar.set_progress_ratio(data["progress_ratio"])
 
+    def on_blink_call_alert_visibility(self, visible: bool):
+        if not visible or self.is_service_mode:
+            self.call_block_overlay.hide()
+            return
+
+        self.call_block_overlay.setGeometry(0, 0, self.width(), self.height())
+        self._position_call_close_btn()
+        self.call_block_overlay.show()
+        self.call_block_overlay.raise_()
+        self.call_close_btn.raise_()
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self._position_exit_btn()
         self._position_debug_info()
         self._position_blink_progress_bar()
+        self.call_block_overlay.setGeometry(0, 0, self.width(), self.height())
+        self._position_call_close_btn()
 
     def _position_exit_btn(self):
         x = (self.width() - self.exit_btn.width()) // 2
@@ -178,3 +209,11 @@ class HomeView(QWidget):
         setting_center_y = self.setting_btn.y() + (self.setting_btn.height() // 2)
         y = setting_center_y - (bar_height // 2)
         self.blink_progress_bar.setGeometry(max(0, x), max(0, y), max(120, bar_width), bar_height)
+
+    def _position_call_close_btn(self):
+        btn_width = max(int(self.width() * 0.58), 520)
+        btn_width = min(btn_width, max(300, self.width() - 40))
+        btn_height = min(max(int(self.height() * 0.22), 180), 280)
+        x = (self.width() - btn_width) // 2
+        y = int(self.height() * 0.62)
+        self.call_close_btn.setGeometry(max(20, x), max(20, y), max(300, btn_width), max(140, btn_height))

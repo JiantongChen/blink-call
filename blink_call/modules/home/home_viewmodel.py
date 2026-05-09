@@ -1,8 +1,10 @@
 import time
+from pathlib import Path
 
 import cv2
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QObject, QTimer, QUrl, Signal
 from PySide6.QtGui import QImage
+from PySide6.QtMultimedia import QSoundEffect
 
 from blink_call.core.inference_worker import InferenceWorker
 from blink_call.modules.home.home_model import HomeModel
@@ -16,6 +18,7 @@ class HomeViewModel(QObject):
     show_camera_status = Signal(str)
     local_service_status = Signal(bool)
     blink_progress_updated = Signal(dict)
+    blink_call_alert_visibility = Signal(bool)
 
     debug_mode_state = Signal(bool)
     show_debug_msg = Signal(str)
@@ -55,6 +58,12 @@ class HomeViewModel(QObject):
         self.timer.setInterval(20)
         self.timer.timeout.connect(self.on_update_frame)
 
+        self.call_sound_effect = QSoundEffect(self)
+        self.call_sound_effect.setLoopCount(int(QSoundEffect.Loop.Infinite.value))
+        self.call_sound_stop_timer = QTimer(self)
+        self.call_sound_stop_timer.setSingleShot(True)
+        self.call_sound_stop_timer.timeout.connect(self.stop_call_audio)
+
         self._initialize_vars()
 
     def _initialize_vars(self):
@@ -64,6 +73,8 @@ class HomeViewModel(QObject):
         self.stat_fps_interval = 10.0
         self.ui_fps_window_start = time.perf_counter()
         self.ui_fps_counter = 0
+        self.is_call_audio_playing = False
+        self.setting_popup = False
 
     def emit_show_camera_status(self, key, **params):
         _t = self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
@@ -71,6 +82,7 @@ class HomeViewModel(QObject):
 
     def on_page_enter(self):
         self._initialize_vars()
+        self.stop_call_audio()
         self.blink_progress_updated.emit(
             {
                 "visibility": self.setting_vm.get_config("blink_call.enabled")
@@ -145,6 +157,7 @@ class HomeViewModel(QObject):
 
         self.timer.stop()
         self.stop_infer_worker()
+        self.stop_call_audio()
         self.local_service_status.emit(True)
         self.debug_mode_state.emit(False)
 
@@ -163,10 +176,15 @@ class HomeViewModel(QObject):
                 "pattern": self.setting_vm.get_config("blink_call.pattern"),
             }
         )
+        if bool(result.get("blinck_call_flag")):
+            self.start_or_reset_call_audio()
 
     def on_infer_debug(self, text: str):
         if self.debug_mode:
             self.show_debug_msg.emit(text)
+
+    def on_listen_setting_popup(self, is_open: bool):
+        self.setting_popup = is_open
 
     def start_infer_worker(self):
         if not bool(self.setting_vm.get_config("blink_call.enabled")):
@@ -181,7 +199,50 @@ class HomeViewModel(QObject):
         if self.infer_worker.isRunning():
             self.infer_worker.wait()
 
+    def start_or_reset_call_audio(self):
+        if (
+            self.setting_popup
+            or not bool(self.setting_vm.get_config("blink_call.enabled"))
+            or not bool(self.setting_vm.get_config("blink_call.audio.enabled"))
+        ):
+            return
+
+        file_name = self.setting_vm.get_config("blink_call.audio.file")
+        if not isinstance(file_name, str) or not file_name.strip():
+            return
+        audio_path = Path("assets") / "audio" / file_name
+
+        volume = int(self.setting_vm.get_config("blink_call.audio.volume"))
+        volume = max(0, min(100, volume))
+        self.call_sound_effect.setVolume(float(volume) / 100.0)
+
+        source = QUrl.fromLocalFile(str(audio_path.resolve()))
+        source_changed = self.call_sound_effect.source() != source
+        if source_changed:
+            self.call_sound_effect.setSource(source)
+
+        # If already playing the same source, only reset countdown; do not replay/stack.
+        if not self.is_call_audio_playing or source_changed:
+            self.call_sound_effect.stop()
+            self.call_sound_effect.play()
+            self.is_call_audio_playing = True
+            self.blink_call_alert_visibility.emit(True)
+
+        duration_s = int(self.setting_vm.get_config("blink_call.audio.play_duration_s"))
+        if duration_s > 0:
+            self.call_sound_stop_timer.start(duration_s * 1000)
+        else:
+            self.call_sound_stop_timer.stop()
+
+    def stop_call_audio(self):
+        self.call_sound_stop_timer.stop()
+        self.call_sound_effect.stop()
+        if self.is_call_audio_playing:
+            self.is_call_audio_playing = False
+            self.blink_call_alert_visibility.emit(False)
+
     def stop_all(self):
         self.timer.stop()
         self.stop_infer_worker()
+        self.stop_call_audio()
         self.model.stop_active_sources()

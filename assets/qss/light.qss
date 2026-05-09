@@ -59,6 +59,28 @@ QPlainTextEdit#homeDebugInfo {
     background-color: rgba(230, 230, 230, 170);
 }
 
+QWidget#homeCallBlockOverlay {
+    background-color: rgba(0, 0, 0, 96);
+}
+
+QPushButton#homeCallCloseBtn {
+    background: #d92d20;
+    color: #ffffff;
+    border: none;
+    border-radius: 18px;
+    font-size: 36px;
+    font-weight: 700;
+    padding: 24px 36px;
+}
+
+QPushButton#homeCallCloseBtn:hover {
+    background: #b42318;
+}
+
+QPushButton#homeCallCloseBtn:pressed {
+    background: #912018;
+}
+
 /* Setting popup */
 QWidget#settingOverlay {
     background-color: rgba(0, 0, 0, 120);
