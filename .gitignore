@@ -107,11 +107,12 @@ venv.bak/
 # Pytorch
 *.pth
 *.pt
-*.onnx
-*.onnx.data
-ViTA/ckp/
 *.py~
 *.sh~
+
+# ONNX
+*.onnx
+*.onnx.data
 
 # Python setup files
 .venv/
@@ -135,13 +136,15 @@ logs/
 **/*.log
 *.out
 
-# videos
-**/*.mp4
-
-# custom
-.codex
-.vscode/
+# Nuitka
 *.build/
 *.dist/
 
+# Videos
+**/*.mp4
+
+# VSCode
+.vscode/
+
+# Custom
 configs/local_config.yaml

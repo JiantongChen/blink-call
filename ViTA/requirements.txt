@@ -1,9 +1,0 @@
-torch
-torchvision
-timm
-PyYAML
-tqdm
-Pillow
-socksio
-onnxscript
-onnxruntime

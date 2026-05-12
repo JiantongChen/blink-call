@@ -8,7 +8,6 @@ from PIL import Image
 from torch.utils.data import ConcatDataset, DataLoader, Dataset
 from torchvision import transforms
 
-
 IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".webp"}
 
 

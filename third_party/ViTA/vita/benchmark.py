@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", default=None, help="Optional checkpoint path.")
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"])
     parser.add_argument("--batch-size", type=int, default=1)
-    parser.add_argument("--warmup", type=int, default=20)
+    parser.add_argument("--warm-up", type=int, default=20)
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument("--threads", type=int, default=None, help="Optional CPU thread count.")
     parser.add_argument("--output", default=None, help="Optional metrics JSON path.")
@@ -47,7 +47,7 @@ def main() -> None:
     x = torch.randn(args.batch_size, 3, image_size, image_size, device=device)
     amp = bool(cfg["train"].get("amp", True)) and device.type == "cuda"
 
-    for _ in range(args.warmup):
+    for _ in range(args.warm_up):
         with autocast(device_type=device.type, enabled=amp):
             _ = model(x)
     if device.type == "cuda":

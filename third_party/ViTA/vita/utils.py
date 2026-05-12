@@ -8,7 +8,6 @@ from typing import Any
 import torch
 import yaml
 
-
 CLASS_NAMES = ["closed", "open"]
 CLASS_NAME_ALIASES = {"sleepy": "closed", "awake": "open"}
 
@@ -36,9 +35,7 @@ def class_names_from_config(cfg: dict[str, Any]) -> list[str]:
             label = int(label)
             existing = names_by_label.get(label)
             if existing is not None and existing != canonical_name:
-                raise ValueError(
-                    f"Conflicting class names for label {label}: {existing}, {canonical_name}"
-                )
+                raise ValueError(f"Conflicting class names for label {label}: {existing}, {canonical_name}")
             names_by_label[label] = canonical_name
 
     if not names_by_label:

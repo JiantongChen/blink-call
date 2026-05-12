@@ -1,4 +1,5 @@
 flask
+insightface
 logging
 markdown
 nuitka

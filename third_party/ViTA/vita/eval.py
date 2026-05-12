@@ -50,9 +50,7 @@ def evaluate(
     per_class_accuracy = {}
     for index, class_name in enumerate(class_names):
         class_total = int(confusion[index].sum())
-        per_class_accuracy[class_name] = (
-            float(confusion[index, index]) / class_total if class_total > 0 else 0.0
-        )
+        per_class_accuracy[class_name] = float(confusion[index, index]) / class_total if class_total > 0 else 0.0
     return {
         "accuracy": correct / max(total, 1),
         "class_names": class_names,

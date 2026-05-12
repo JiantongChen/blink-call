@@ -129,14 +129,10 @@ def main() -> None:
     epochs = int(cfg["train"].get("epochs", 20))
     warmup_epochs = int(cfg["train"].get("warmup_epochs", 0))
     if warmup_epochs > 0:
-        warmup = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=0.01, total_iters=warmup_epochs
-        )
-        cosine = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=max(epochs - warmup_epochs, 1)
-        )
+        warm_up = torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=0.01, total_iters=warmup_epochs)
+        cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max(epochs - warmup_epochs, 1))
         scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs]
+            optimizer, schedulers=[warm_up, cosine], milestones=[warmup_epochs]
         )
     else:
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
@@ -172,9 +168,7 @@ def main() -> None:
             val_metrics = {"accuracy": val_acc}
             if score > best_score:
                 best_score = score
-                save_checkpoint(
-                    output_dir / "best.pt", cfg, class_names, model, optimizer, epoch, val_metrics
-                )
+                save_checkpoint(output_dir / "best.pt", cfg, class_names, model, optimizer, epoch, val_metrics)
             save_checkpoint(output_dir / "last.pt", cfg, class_names, model, optimizer, epoch, val_metrics)
 
             row = {
@@ -190,9 +184,7 @@ def main() -> None:
             f.flush()
             print(
                 "epoch={} train_loss={:.4f} train_acc={:.4f} "
-                "val_loss={:.4f} val_acc={:.4f}".format(
-                    epoch, train_loss, train_acc, val_loss, val_acc
-                )
+                "val_loss={:.4f} val_acc={:.4f}".format(epoch, train_loss, train_acc, val_loss, val_acc)
             )
 
     print("best_accuracy={:.4f}".format(best_score))
