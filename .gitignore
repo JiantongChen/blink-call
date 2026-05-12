@@ -106,6 +106,10 @@ venv.bak/
 
 # Pytorch
 *.pth
+*.pt
+*.onnx
+*.onnx.data
+ViTA/ckp/
 *.py~
 *.sh~
 

@@ -28,7 +28,14 @@ The system captures real-time video streams, performs lightweight blink recognit
 
 # ✨ For User
 
-To be supplemented!
+## Model Assets
+
+The runtime eye-state classifier uses an ONNX model file that is not stored in
+Git because it is too large for normal repository storage. Download the model
+asset from the project cloud drive and place it in the expected local path
+before running blink detection.
+
+See: **[`docs/model_assets.md`](docs/model_assets.md)**
 
 ---
 
@@ -53,6 +60,11 @@ To be supplemented!
 ## 🔧 Installation
 
 See: **[`docs/installation.md`](docs/installation.md)**
+
+## 🧠 Model Assets
+
+See: **[`docs/model_assets.md`](docs/model_assets.md)** for the required ONNX
+runtime model and optional training checkpoints.
 
 ---
 

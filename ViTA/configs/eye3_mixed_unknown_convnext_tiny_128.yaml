@@ -1,0 +1,29 @@
+experiment_name: eye3_mixed_unknown_convnext_tiny_128_finetune
+output_dir: outputs
+seed: 42
+
+data:
+  image_size: 128
+  batch_size: 128
+  eval_batch_size: 256
+  num_workers: 8
+  pin_memory: true
+  datasets:
+    - root: /home/featurize/data/eye3_mixed_unknown
+      class_map:
+        closed: 0
+        open: 1
+        irrelevant: 2
+
+model:
+  name: convnext_tiny
+  pretrained: true
+
+train:
+  device: cuda
+  epochs: 5
+  lr: 0.00005
+  weight_decay: 0.05
+  warmup_epochs: 2
+  amp: true
+  class_weight: false

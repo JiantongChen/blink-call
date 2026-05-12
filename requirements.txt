@@ -2,6 +2,7 @@ flask
 logging
 markdown
 nuitka
+onnxruntime
 opencv-python
 pre_commit
 PySide6
