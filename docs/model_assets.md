@@ -18,7 +18,8 @@ Download:
 Cloud drive link:
 
 ```text
-TODO: add cloud drive URL here
+Baidu Netdisk: https://pan.baidu.com/s/1ckwmel8RH9ATeNmxaRACng?pwd=5842
+Extraction code: 5842
 ```
 
 Expected directory layout after download:
@@ -50,7 +51,8 @@ Download if needed:
 Cloud drive link:
 
 ```text
-TODO: add cloud drive URL here
+Baidu Netdisk: https://pan.baidu.com/s/19njfqm5ix-VBWmMoNCPSMA?pwd=5842
+Extraction code: 5842
 ```
 
 ## Verification
