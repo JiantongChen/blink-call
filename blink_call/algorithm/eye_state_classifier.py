@@ -89,8 +89,9 @@ class EyeStateClassifier:
 
             return self._return_data(
                 state=state,
+                confidence=confidence,
                 debug_info=(
-                    f"label={model_label}, confidence={confidence:.3f}, state={state}, latency_ms={elapsed_ms:.1f}"
+                    f"label={model_label}, confidence={confidence:.3f}, state={state}, elapsed_ms={elapsed_ms:.1f}"
                 ),
             )
         except Exception as e:
@@ -124,5 +125,10 @@ class EyeStateClassifier:
         exp = np.exp(shifted)
         return exp / np.sum(exp)
 
-    def _return_data(self, state=EyeState.UNKNOWN, debug_info=""):
-        return {"timestamp_ms": int(time.time() * 1000), "state": state, "debug_info": debug_info}
+    def _return_data(self, state=EyeState.UNKNOWN, confidence=-1, debug_info=""):
+        return {
+            "timestamp_ms": int(time.time() * 1000),
+            "state": state,
+            "confidence": confidence,
+            "debug_info": debug_info,
+        }

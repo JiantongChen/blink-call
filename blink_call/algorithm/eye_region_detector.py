@@ -62,6 +62,7 @@ class EyeRegionDetector:
         if not isinstance(frame, np.ndarray) or frame.ndim < 2:
             return self._return_data(debug_info="invalid frame data")
 
+        started = time.perf_counter()
         try:
             faces = self.app.get(frame, max_num=1)
         except Exception as e:
@@ -77,18 +78,15 @@ class EyeRegionDetector:
         head_pose = self.head_pose_estimator.estimate(landmarks, frame.shape)
         selected_eye = "left" if head_pose["yaw"] > 0 else "right"
         selected_eye_points = landmarks[self.eye_indices.get(selected_eye)]
-
         eye_bbox = Helper.points_to_bbox(selected_eye_points, frame.shape, self.eye_padding)
+        elapsed_ms = (time.perf_counter() - started) * 1000.0
 
         return self._return_data(
             eye_bbox_xyxy=eye_bbox,
             face_bbox_xyxy=faces[0]["bbox"].tolist(),
             landmarks=landmarks.tolist(),
             debug_info=(
-                f"success select {selected_eye} eye"
-                f"\nyaw:{head_pose['yaw']}"
-                f"\npitch:{head_pose['pitch']}"
-                f"\nroll:{head_pose['roll']}"
+                f"select {selected_eye} eye: elapsed_ms={elapsed_ms:.1f}, yaw:{head_pose['yaw']:.3f}, pitch:{head_pose['pitch']:.3f}, roll:{head_pose['roll']:.3f}"
             ),
         )
 

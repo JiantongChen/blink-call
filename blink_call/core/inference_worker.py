@@ -33,9 +33,11 @@ class InferenceWorker(QThread):
         self.latest_eye_bbox = None
         self.latest_face_bbox = None
         self.latest_landmarks = None
-        self.latest_eye_bbox_ms = 0
         self.pending_bbox_future = None
         self.bbox_executor = None
+        self.debug_emit_interval_s = 1.0
+        self.last_eye_region_debug_emit_s = time.perf_counter()
+        self.last_eye_state_debug_emit_s = time.perf_counter()
 
         self.match_cooldown_s = 1.0
         self.last_match_time = -1.0
@@ -53,8 +55,21 @@ class InferenceWorker(QThread):
         self.in_transition_buffer = False
         self.transition_elapsed_s = 0.0
 
-    def debug_info(self, text):
-        self.show_debug_msg.emit(text)
+    def debug_info(self, text, source=""):
+        now = time.perf_counter()
+
+        if source == "eye_region":
+            if now - self.last_eye_region_debug_emit_s >= self.debug_emit_interval_s:
+                self.last_eye_region_debug_emit_s = now
+                self.show_debug_msg.emit(text)
+
+        elif source == "eye_state":
+            if now - self.last_eye_state_debug_emit_s >= self.debug_emit_interval_s:
+                self.last_eye_state_debug_emit_s = now
+                self.show_debug_msg.emit(text)
+
+        else:
+            self.show_debug_msg.emit(text)
 
     def stat_fps(self):
         self.infer_fps_counter += 1
@@ -98,16 +113,15 @@ class InferenceWorker(QThread):
             self.bbox_executor = None
 
     def inference(self, frame):
-        self.debug_info("=" * 10)
-
         self.poll_latest_bbox()
         self.submit_eye_region_detect_task(frame)
 
         eye_roi = Helper.image_cropping(frame, self.latest_eye_bbox)
         cls_result = self.eye_state_classifier.classify(eye_roi)
-        self.debug_info(f"[EyeStateClassifier] debug info: {cls_result['debug_info']}")
+        self.debug_info(f"[EyeStateClassifier] debug info: {cls_result['debug_info']}", "eye_state")
 
-        eye_state = cls_result.get("state", "unknown")
+        eye_state = cls_result.get("state")
+        confidence = cls_result.get("confidence")
         progress_ratio, blinck_call_flag = self.update_forward_progress(eye_state)
 
         return {
@@ -117,7 +131,9 @@ class InferenceWorker(QThread):
             "debug_eye_bbox_xyxy": self.latest_eye_bbox,
             "debug_face_bbox_xyxy": self.latest_face_bbox,
             "debug_landmarks": self.latest_landmarks,
-            "debug_info": "\n".join([f"eye_state: {eye_state}", f"pattern_progress: {progress_ratio:.3f}"]),
+            "debug_info": "\n".join(
+                [f"eye_state: {eye_state}", f"confidence: {confidence:.3f}", f"pattern_progress: {progress_ratio:.3f}"]
+            ),
         }
 
     def poll_latest_bbox(self):
@@ -131,16 +147,12 @@ class InferenceWorker(QThread):
             self.pending_bbox_future = None
             return
 
-        self.debug_info(
-            f"[EyeRegionDetector] cost time: {(result['timestamp_ms'] - self.latest_eye_bbox_ms) if self.latest_eye_bbox_ms else -1} ms"
-        )
-        self.latest_eye_bbox_ms = result["timestamp_ms"]
         self.latest_eye_bbox = [int(v) for v in result["eye_bbox_xyxy"]] if result["eye_bbox_xyxy"] else None
         self.latest_face_bbox = [int(v) for v in result["face_bbox_xyxy"]] if result["face_bbox_xyxy"] else None
         self.latest_landmarks = (
             [[int(point[0]), int(point[1])] for point in result["landmarks"]] if result["landmarks"] else None
         )
-        self.debug_info(f"[EyeRegionDetector] debug info: {result['debug_info']}")
+        self.debug_info(f"[EyeRegionDetector] debug info: {result['debug_info']}", "eye_region")
 
         self.pending_bbox_future = None
 
@@ -169,6 +181,7 @@ class InferenceWorker(QThread):
                     self.in_transition_buffer = False
                     self.transition_elapsed_s = 0.0
                     self.progress_in_step_s = dt
+
         elif eye_state in {"open", "closed"} and self.progress_step_idx < len(self.blink_pattern):
             rule = self.blink_pattern[self.progress_step_idx]
             rule_state = rule["state"]
