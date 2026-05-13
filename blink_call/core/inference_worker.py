@@ -31,6 +31,8 @@ class InferenceWorker(QThread):
         self.infer_fps_counter = 0
 
         self.latest_eye_bbox = None
+        self.latest_face_bbox = None
+        self.latest_landmarks = None
         self.latest_eye_bbox_ms = 0
         self.pending_bbox_future = None
         self.bbox_executor = None
@@ -112,7 +114,9 @@ class InferenceWorker(QThread):
             "timestamp_ms": int(time.time() * 1000),
             "blinck_call_flag": bool(blinck_call_flag),
             "blink_progress_ratio": float(progress_ratio),
-            "debug_bbox_xyxy": [self.latest_eye_bbox] if self.latest_eye_bbox else [],
+            "debug_eye_bbox_xyxy": self.latest_eye_bbox,
+            "debug_face_bbox_xyxy": self.latest_face_bbox,
+            "debug_landmarks": self.latest_landmarks,
             "debug_info": "\n".join([f"eye_state: {eye_state}", f"pattern_progress: {progress_ratio:.3f}"]),
         }
 
@@ -131,7 +135,11 @@ class InferenceWorker(QThread):
             f"[EyeRegionDetector] cost time: {(result['timestamp_ms'] - self.latest_eye_bbox_ms) if self.latest_eye_bbox_ms else -1} ms"
         )
         self.latest_eye_bbox_ms = result["timestamp_ms"]
-        self.latest_eye_bbox = [int(v) for v in result["bbox_xyxy"]]
+        self.latest_eye_bbox = [int(v) for v in result["eye_bbox_xyxy"]] if result["eye_bbox_xyxy"] else None
+        self.latest_face_bbox = [int(v) for v in result["face_bbox_xyxy"]] if result["face_bbox_xyxy"] else None
+        self.latest_landmarks = (
+            [[int(point[0]), int(point[1])] for point in result["landmarks"]] if result["landmarks"] else None
+        )
         self.debug_info(f"[EyeRegionDetector] debug info: {result['debug_info']}")
 
         self.pending_bbox_future = None

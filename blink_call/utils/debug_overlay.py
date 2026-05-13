@@ -1,7 +1,7 @@
 import cv2
 
 
-def draw_debug(frame, info: dict, color=(42, 90, 255)):
+def draw_debug(frame, info: dict, color=(42, 90, 255), eye_color=(80, 220, 120), landmark_step=1):
     """
     Draw debug information (bbox + text) on the image
 
@@ -17,14 +17,21 @@ def draw_debug(frame, info: dict, color=(42, 90, 255)):
     draw_frame = frame.copy()
     h, w = frame.shape[:2]
 
-    bboxes = info.get("debug_bbox_xyxy", [])
-    for bbox in bboxes:
-        box = get_safe_bbox(bbox, w, h)
-        if box is None:
-            continue
+    face_bbox = info.get("debug_face_bbox_xyxy")
+    eye_bbox = info.get("debug_eye_bbox_xyxy")
+    landmarks = info.get("debug_landmarks")
 
-        left, top, right, bottom = box
+    face_box = get_safe_bbox(face_bbox, w, h)
+    if face_box is not None:
+        left, top, right, bottom = face_box
         cv2.rectangle(draw_frame, (left, top), (right, bottom), color, 2)
+
+    eye_box = get_safe_bbox(eye_bbox, w, h)
+    if eye_box is not None:
+        left, top, right, bottom = eye_box
+        cv2.rectangle(draw_frame, (left, top), (right, bottom), eye_color, 2)
+
+    draw_landmarks(draw_frame, landmarks, w, h, color, landmark_step)
 
     debug_info = info.get("debug_info", "")
     if isinstance(debug_info, str) and debug_info:
@@ -83,3 +90,29 @@ def draw_text_block(img, text, color):
         )
 
         y += line_gap
+
+
+def draw_landmarks(img, landmarks, w, h, color, landmark_step=1):
+    if landmarks is None:
+        return
+
+    if landmark_step is None or landmark_step < 1:
+        landmark_step = 1
+
+    for idx, point in enumerate(landmarks):
+        if idx % landmark_step != 0:
+            continue
+
+        try:
+            if len(point) < 2:
+                continue
+            x = int(float(point[0]))
+            y = int(float(point[1]))
+        except (TypeError, ValueError):
+            continue
+        except Exception:
+            continue
+
+        x = max(0, min(x, w - 1))
+        y = max(0, min(y, h - 1))
+        cv2.circle(img, (x, y), 1, color, -1)

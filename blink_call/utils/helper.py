@@ -1,13 +1,23 @@
+import json
 import random
 import socket
 from copy import deepcopy
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+import numpy as np
 import yaml
 
 
 class Helper:
+    @classmethod
+    def read_json(cls, path: Path, return_if_not_exists=None):
+        if not path.exists():
+            return return_if_not_exists
+
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+
     @classmethod
     def read_yaml(cls, path: Path):
         if not path.exists():
@@ -70,7 +80,7 @@ class Helper:
             sock.close()
 
     @classmethod
-    def image_cropping(self, image, bbox):
+    def image_cropping(cls, image, bbox):
         if image is None or bbox is None:
             return None
 
@@ -87,3 +97,22 @@ class Helper:
             return None
 
         return image[top:bottom, left:right]
+
+    @classmethod
+    def points_to_bbox(cls, points, img_shape, padding=0):
+        """
+        Convert points to bbox with padding.
+        """
+        h, w = img_shape[:2]
+
+        x_min = int(np.floor(np.min(points[:, 0]))) - padding
+        y_min = int(np.floor(np.min(points[:, 1]))) - padding
+        x_max = int(np.ceil(np.max(points[:, 0]))) + padding
+        y_max = int(np.ceil(np.max(points[:, 1]))) + padding
+
+        x_min = max(0, x_min)
+        y_min = max(0, y_min)
+        x_max = min(w - 1, x_max)
+        y_max = min(h - 1, y_max)
+
+        return [x_min, y_min, x_max, y_max]

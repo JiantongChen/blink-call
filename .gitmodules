@@ -1,0 +1,3 @@
+[submodule "third_party/insightface"]
+	path = third_party/insightface
+	url = https://github.com/JiantongChen/insightface.git
