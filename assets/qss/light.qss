@@ -59,6 +59,25 @@ QPlainTextEdit#homeDebugInfo {
     background-color: rgba(230, 230, 230, 170);
 }
 
+QPushButton#homeRecordStopBtn {
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    font-size: 28px;
+    font-weight: 700;
+    padding: 16px 20px;
+    text-align: center;
+}
+
+QPushButton#homeRecordStopBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#homeRecordStopBtn:pressed {
+    background: #991b1b;
+}
+
 QWidget#homeCallBlockOverlay {
     background-color: rgba(0, 0, 0, 96);
 }
@@ -231,7 +250,8 @@ QRadioButton::indicator:checked {
 QPushButton#settingSaveBtn,
 QPushButton#settingCloseBtn,
 QPushButton#settingResetBtn,
-QPushButton#settingStartServiceBtn {
+QPushButton#settingStartServiceBtn,
+QPushButton#settingStartRecordingBtn {
     min-height: 34px;
     border: none;
     border-radius: 8px;
@@ -278,6 +298,19 @@ QPushButton#settingStartServiceBtn:hover {
 
 QPushButton#settingStartServiceBtn:pressed {
     background: #b45309;
+}
+
+QPushButton#settingStartRecordingBtn {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+QPushButton#settingStartRecordingBtn:hover {
+    background: #b91c1c;
+}
+
+QPushButton#settingStartRecordingBtn:pressed {
+    background: #991b1b;
 }
 
 QPushButton#settingResetBtn {

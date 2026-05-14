@@ -8,6 +8,7 @@ class SettingViewModel(QObject):
     language_changed = Signal(str)
     save_setting = Signal()
     start_local_service = Signal()
+    start_recording_requested = Signal()
 
     def __init__(self, model: SettingModel):
         super().__init__()
@@ -39,3 +40,9 @@ class SettingViewModel(QObject):
     def on_start_local_service(self):
         self.close_requested.emit()
         self.start_local_service.emit()
+
+    def start_recording(self):
+        self.model.save_config()
+        self.language_changed.emit(self.get_config("ui.language"))
+        self.close_requested.emit()
+        self.start_recording_requested.emit()

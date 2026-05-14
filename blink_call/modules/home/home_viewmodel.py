@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from pathlib import Path
 
 import cv2
@@ -22,6 +23,7 @@ class HomeViewModel(QObject):
     blink_progress_updated = Signal(dict)
     blink_call_alert_visibility = Signal(bool)
     model_files_hint = Signal(dict)
+    recording_state_changed = Signal(dict)
 
     debug_mode_state = Signal(bool)
     show_debug_msg = Signal(str)
@@ -53,6 +55,7 @@ class HomeViewModel(QObject):
         self.model_files_manager = ModelFilesManager()
         self.setting_vm.save_setting.connect(self.on_page_enter)
         self.setting_vm.start_local_service.connect(self.on_start_service)
+        self.setting_vm.start_recording_requested.connect(self.start_recording)
 
         self.infer_worker = InferenceWorker(self.model)
         self.infer_worker.result_ready.connect(self.on_infer_result)
@@ -80,6 +83,13 @@ class HomeViewModel(QObject):
         self.is_call_audio_playing = False
         self.setting_popup = False
 
+        self.is_recording_mode = False
+        self.recording_output_dir = None
+        self.recording_session_started_at = 0.0
+        self.recording_segment_started_at = 0.0
+        self.recording_total_seconds = max(0, int(self.setting_vm.get_config("recording.max_duration_min")) * 60)
+        self.recording_target_fps = 30.0
+
     def emit_show_camera_status(self, key, **params):
         _t = self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
         self.show_camera_status.emit(_t.format(**params))
@@ -87,6 +97,7 @@ class HomeViewModel(QObject):
     def on_page_enter(self):
         self._initialize_vars()
         self.stop_call_audio()
+        self.close_recording_writer()
         self.blink_progress_updated.emit(
             {
                 "visibility": self.setting_vm.get_config("blink_call.enabled")
@@ -98,6 +109,7 @@ class HomeViewModel(QObject):
 
         self.local_service_status.emit(False)
         self.model_files_hint.emit({"visible": False, "text": ""})
+        self.recording_state_changed.emit({"active": False, "elapsed_s": 0, "total_s": 0})
         self.clear_debug_msg.emit()
         self.debug_mode_state.emit(self.debug_mode)
 
@@ -147,6 +159,7 @@ class HomeViewModel(QObject):
             if (
                 isinstance(self.latest_infer_result, dict)
                 and int(time.time() * 1000) - self.latest_infer_result["timestamp_ms"] < 3000
+                and not self.is_recording_mode
             ):
                 frame = draw_debug(frame, self.latest_infer_result)
 
@@ -154,6 +167,9 @@ class HomeViewModel(QObject):
         h, w, ch = rgb.shape
         image = QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888).copy()
         self.frame_ready.emit(image)
+
+        if self.is_recording_mode:
+            self.write_recording_frame(frame)
 
     def on_start_service(self):
         local_camera_id = self.setting_vm.get_config("local_service.camera_id", source="temp")
@@ -192,9 +208,7 @@ class HomeViewModel(QObject):
         self.setting_popup = is_open
 
     def start_infer_worker(self):
-        self.model_files_hint.emit({"visible": False, "text": ""})
-
-        if not bool(self.setting_vm.get_config("blink_call.enabled")):
+        if not bool(self.setting_vm.get_config("blink_call.enabled")) or self.is_recording_mode:
             return
 
         if not self.model_files_manager.all_model_files_exists():
@@ -253,8 +267,82 @@ class HomeViewModel(QObject):
             self.is_call_audio_playing = False
             self.blink_call_alert_visibility.emit(False)
 
+    def start_recording(self):
+        self.is_recording_mode = True
+
+        self.blink_progress_updated.emit(
+            {
+                "visibility": False,
+                "progress_ratio": 0.0,
+                "pattern": self.setting_vm.get_config("blink_call.pattern"),
+            }
+        )
+
+        self.stop_infer_worker()
+        self.start_local_camera()
+
+        language = self.setting_vm.get_config("ui.language")
+        folder_name = "眨眼呼叫数据" if language == "zh" else "blink_call_data"
+        root_dir = self.setting_vm.get_config("recording.local_dir")
+        output_dir = Path(root_dir) / folder_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.recording_output_dir = output_dir
+
+        self.recording_session_started_at = time.perf_counter()
+        self.recording_segment_started_at = 0.0
+        self.recording_total_seconds = max(0, int(self.setting_vm.get_config("recording.max_duration_min")) * 60)
+        self.recording_state_changed.emit({"active": True, "elapsed_s": 0, "total_s": self.recording_total_seconds})
+
+    def stop_recording(self):
+        self.is_recording_mode = False
+        self.recording_state_changed.emit({"active": False, "elapsed_s": 0, "total_s": 0})
+
+        self.close_recording_writer()
+        self.on_page_enter()
+
+    def open_recording_writer(self, frame):
+        h, w = frame.shape[:2]
+        file_name = f"{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.mp4"
+        file_path = self.recording_output_dir / file_name
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(str(file_path), fourcc, self.recording_target_fps, (w, h))
+        if not writer.isOpened():
+            self.show_debug_msg.emit(f"[Recording] failed to open writer: {file_path}")
+            return
+
+        self.recording_writer = writer
+        self.recording_segment_started_at = time.perf_counter()
+
+    def close_recording_writer(self):
+        if hasattr(self, "recording_writer") and self.recording_writer is not None:
+            self.recording_writer.release()
+        self.recording_writer = None
+
+    def write_recording_frame(self, frame):
+        now = time.perf_counter()
+
+        if now - self.recording_segment_started_at >= 60.0:
+            self.close_recording_writer()
+
+        if self.recording_writer is None:
+            self.open_recording_writer(frame)
+
+        if self.recording_writer is None:
+            return
+
+        self.recording_writer.write(frame)
+
+        elapsed_s = max(0, int(now - self.recording_session_started_at))
+        self.recording_state_changed.emit(
+            {"active": True, "elapsed_s": elapsed_s, "total_s": self.recording_total_seconds}
+        )
+
+        if elapsed_s >= self.recording_total_seconds:
+            self.stop_recording()
+
     def stop_all(self):
         self.timer.stop()
         self.stop_infer_worker()
         self.stop_call_audio()
+        self.close_recording_writer()
         self.model.stop_active_sources()

@@ -134,3 +134,11 @@ class Helper:
         y_max = min(h - 1, y_max)
 
         return [x_min, y_min, x_max, y_max]
+
+    @classmethod
+    def format_hms(cls, total_seconds: int):
+        s = max(0, int(total_seconds))
+        h = s // 3600
+        m = (s % 3600) // 60
+        sec = s % 60
+        return f"{h:02d}:{m:02d}:{sec:02d}"

@@ -139,6 +139,7 @@ class SettingView(QWidget):
         self.bind_spinbox(self.remote_port, "camera.remote.port")
         self.bind_spinbox(self.service_camera_id, "local_service.camera_id")
         self.bind_spinbox(self.service_port, "local_service.port")
+        self.bind_spinbox(self.recording_duration_spin, "recording.max_duration_min")
         self.bind_combo(self.blink_call_audio_file_combo, "blink_call.audio.file")
         self.bind_combo(self.blink_call_audio_duration_combo, "blink_call.audio.play_duration_s")
         self.bind_slider(self.blink_call_audio_volume_slider, "blink_call.audio.volume")
@@ -210,6 +211,8 @@ class SettingView(QWidget):
         self.close_btn.clicked.connect(self.vm.close)
         self.reset_config_btn.clicked.connect(self.on_restore_default_config)
         self.start_service_btn.clicked.connect(self.on_start_service)
+        self.recording_start_btn.clicked.connect(self.vm.start_recording)
+        self.recording_path_choose_btn.clicked.connect(self.on_choose_recording_dir)
         self.debug_log_path_choose_btn.clicked.connect(self.on_choose_debug_log_dir)
         self.vm.close_requested.connect(self.hide)
         self.model_files_manager.status_changed.connect(self.on_model_files_status_changed)
@@ -365,6 +368,11 @@ class SettingView(QWidget):
 
         self.service_camera_id.setValue(int(self.vm.get_config("local_service.camera_id") or 0))
         self.service_port.setValue(int(self.vm.get_config("local_service.port") or 10000))
+        recording_max_duration_min = int(self.vm.get_config("recording.max_duration_min") or 1)
+        self.recording_duration_spin.setValue(max(1, min(1440, recording_max_duration_min)))
+        self.recording_path_value_label.setText(
+            self.vm.get_config("recording.local_dir") or str(Path.home() / "Desktop")
+        )
 
         self.model_files_manager.start_check_status(timeout_s=10.0)
 
@@ -436,6 +444,12 @@ class SettingView(QWidget):
             row["remove_btn"].setText(i18n["blink_call_remove_step_btn"])
 
         self.debug_mode_label.setText(i18n["debug_mode_label"])
+        self.recording_label.setText(i18n["recording_title"])
+        self.recording_start_btn.setText(i18n["recording_start_btn"])
+        self.recording_duration_label.setText(i18n["recording_duration_label"])
+        self.recording_duration_unit_label.setText(i18n["recording_duration_unit"])
+        self.recording_path_label.setText(i18n["recording_path_label"])
+        self.recording_path_choose_btn.setText(i18n["recording_path_choose_btn"])
         self.debug_mode_on_radio.setText(i18n["debug_mode_on_radio"])
         self.debug_mode_off_radio.setText(i18n["debug_mode_off_radio"])
         self.debug_log_save_label.setText(i18n["debug_log_save_label"])
@@ -557,6 +571,25 @@ class SettingView(QWidget):
 
     def on_start_service(self):
         self.vm.on_start_local_service()
+
+    def on_choose_recording_dir(self):
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        current_dir = self.vm.get_config("recording.local_dir", source="temp") or str(Path.home() / "Desktop")
+        dialog = QFileDialog(self, i18n["recording_choose_dir_title"], current_dir)
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+
+        if dialog.exec() != QFileDialog.DialogCode.Accepted:
+            return
+
+        selected_list = dialog.selectedFiles()
+        if not selected_list:
+            return
+        selected = selected_list[0]
+
+        self.vm.set_config("recording.local_dir", selected)
+        self.recording_path_value_label.setText(selected)
 
     def on_restore_default_config(self):
         i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])

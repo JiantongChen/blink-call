@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from blink_call.core.navigation import Navigation
 from blink_call.modules.home.home_viewmodel import HomeViewModel
 from blink_call.modules.setting.setting_view import SettingView
+from blink_call.utils.helper import Helper
 from blink_call.widget import BlinkPatternProgressBar, InteractionBlockOverlay
 
 
@@ -26,11 +27,13 @@ class HomeView(QWidget):
             "settings": "设置",
             "exit": "退出",
             "calling_btn": "正在呼叫中...\n点击此按钮关闭",
+            "recording_stop": "点击此处提前终止数据录制",
         },
         "en": {
             "settings": "Settings",
             "exit": "Exit",
             "calling_btn": "Calling...\nTap to stop",
+            "recording_stop": "Click here to terminate data recording in advance",
         },
     }
 
@@ -72,6 +75,12 @@ class HomeView(QWidget):
         self.exit_btn.setFixedSize(156, 48)
         self.exit_btn.setVisible(False)
         self.exit_btn.clicked.connect(self.vm.on_page_enter)
+
+        self.recording_stop_btn = QPushButton("", self)
+        self.recording_stop_btn.setObjectName("homeRecordStopBtn")
+        self.recording_stop_btn.setFixedSize(500, 120)
+        self.recording_stop_btn.setVisible(False)
+        self.recording_stop_btn.clicked.connect(self.vm.stop_recording)
 
         self.debug_info = QPlainTextEdit(self)
         self.debug_info.setObjectName("homeDebugInfo")
@@ -123,8 +132,10 @@ class HomeView(QWidget):
         self.vm.blink_progress_updated.connect(self.on_blink_progress_updated)
         self.vm.blink_call_alert_visibility.connect(self.on_blink_call_alert_visibility)
         self.vm.model_files_hint.connect(self.on_model_files_hint)
+        self.vm.recording_state_changed.connect(self.on_recording_state_changed)
 
         self.is_service_mode = False
+        self.is_recording_mode = False
         self.on_apply_language(self.vm.setting_vm.get_config("ui.language"))
 
     def on_apply_language(self, language):
@@ -142,7 +153,7 @@ class HomeView(QWidget):
         self.is_setting_popup.emit(True)
 
     def on_close_setting_popup(self):
-        self.setting_btn.setVisible(True)
+        self.setting_btn.setVisible(not self.is_service_mode and not self.is_recording_mode)
         self.is_setting_popup.emit(False)
 
     def on_show_frame(self, image):
@@ -162,7 +173,7 @@ class HomeView(QWidget):
 
     def on_set_service_mode(self, active: bool):
         self.is_service_mode = active
-        self.setting_btn.setVisible(not active)
+        self.setting_btn.setVisible(not active and not self.is_recording_mode)
         self.exit_btn.setVisible(active)
 
     def on_set_debug_visible(self, visible: bool):
@@ -191,7 +202,7 @@ class HomeView(QWidget):
             return
 
     def on_blink_progress_updated(self, data: dict):
-        visible = False if self.is_service_mode else data["visibility"]
+        visible = False if self.is_service_mode or self.is_recording_mode else data["visibility"]
         self.blink_progress_bar.setVisible(visible)
         if data["visibility"]:
             self.blink_progress_bar.set_pattern(data["pattern"])
@@ -215,15 +226,30 @@ class HomeView(QWidget):
         self.model_files_hint_box.setVisible(visible and bool(text))
         self._position_model_files_hint()
 
+    def on_recording_state_changed(self, data: dict):
+        active = bool(data.get("active"))
+        self.is_recording_mode = active
+        self.setting_btn.setVisible(not active and not self.is_service_mode)
+        self.recording_stop_btn.setVisible(active)
+        if active:
+            self.blink_progress_bar.setVisible(False)
+
+        i18n = self.TEXTS.get(self.vm.setting_vm.get_config("ui.language"), self.TEXTS["zh"])
+        total_text = Helper.format_hms(int(data.get("total_s") or 0))
+        elapsed_text = Helper.format_hms(int(data.get("elapsed_s") or 0))
+        self.recording_stop_btn.setText(f"{elapsed_text} / {total_text}\n{i18n['recording_stop']}")
+        self._position_recording_stop_btn()
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.setting_popup.setGeometry(0, 0, self.width(), self.height())
         self._position_exit_btn()
         self._position_debug_info()
         self._position_blink_progress_bar()
-        self.call_block_overlay.setGeometry(0, 0, self.width(), self.height())
+        self._position_recording_stop_btn()
         self._position_call_close_btn()
         self._position_model_files_hint()
+        self.call_block_overlay.setGeometry(0, 0, self.width(), self.height())
 
     def _position_exit_btn(self):
         x = (self.width() - self.exit_btn.width()) // 2
@@ -246,6 +272,11 @@ class HomeView(QWidget):
         setting_center_y = self.setting_btn.y() + (self.setting_btn.height() // 2)
         y = setting_center_y - (bar_height // 2)
         self.blink_progress_bar.setGeometry(max(0, x), max(0, y), max(120, bar_width), bar_height)
+
+    def _position_recording_stop_btn(self):
+        x = (self.width() - self.recording_stop_btn.width()) // 2
+        y = int(self.height() * 0.70)
+        self.recording_stop_btn.move(max(20, x), max(20, y))
 
     def _position_call_close_btn(self):
         btn_width = max(int(self.width() * 0.58), 520)
