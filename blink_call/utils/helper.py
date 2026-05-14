@@ -19,6 +19,24 @@ class Helper:
             return json.load(f)
 
     @classmethod
+    def write_json(
+        cls,
+        path: Path,
+        data,
+        ensure_ascii=False,
+        indent=4,
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(
+                data,
+                f,
+                ensure_ascii=ensure_ascii,
+                indent=indent,
+            )
+
+    @classmethod
     def read_yaml(cls, path: Path):
         if not path.exists():
             return {}

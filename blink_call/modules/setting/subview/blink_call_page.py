@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QRadioButton,
     QScrollArea,
@@ -54,6 +55,11 @@ class BlinkCallPageWidgets:
     blink_call_audio_duration_label: QLabel
     blink_call_audio_duration_combo: QComboBox
     blink_call_audio_duration_divider_line: HDividerLine
+    model_files_widgets_row: QWidget
+    model_files_label: QLabel
+    model_files_desc_label: QLineEdit
+    model_files_btn: QPushButton
+    model_files_divider_line: HDividerLine
 
 
 def build_blink_call_page(content_stack: QStackedWidget) -> BlinkCallPageWidgets:
@@ -204,6 +210,29 @@ def build_blink_call_page(content_stack: QStackedWidget) -> BlinkCallPageWidgets
 
     blink_call_audio_duration_divider_line = HDividerLine()
     blink_call_layout.addWidget(blink_call_audio_duration_divider_line)
+
+    model_files_widgets_row = QWidget()
+    model_files_widgets_row.setObjectName("settingModelFilesRow")
+    model_files_row = QHBoxLayout(model_files_widgets_row)
+    model_files_row.setContentsMargins(0, 0, 0, 0)
+    model_files_row.setSpacing(12)
+
+    model_files_label = QLabel("Download/Update model files")
+    model_files_label.setObjectName("settingSubSectionTitle")
+    model_files_desc_label = QLineEdit("")
+    model_files_desc_label.setObjectName("settingModelFilesDesc")
+    model_files_desc_label.setReadOnly(True)
+    model_files_btn = QPushButton("Download/Update")
+    model_files_btn.setObjectName("settingModelFilesBtn")
+    model_files_btn.setFixedWidth(180)
+
+    model_files_row.addWidget(model_files_label)
+    model_files_row.addWidget(model_files_desc_label, 1)
+    model_files_row.addWidget(model_files_btn)
+    blink_call_layout.addWidget(model_files_widgets_row)
+
+    model_files_divider_line = HDividerLine()
+    blink_call_layout.addWidget(model_files_divider_line)
     blink_call_layout.addStretch()
 
     return BlinkCallPageWidgets(
@@ -241,4 +270,9 @@ def build_blink_call_page(content_stack: QStackedWidget) -> BlinkCallPageWidgets
         blink_call_audio_duration_label=blink_call_audio_duration_label,
         blink_call_audio_duration_combo=blink_call_audio_duration_combo,
         blink_call_audio_duration_divider_line=blink_call_audio_duration_divider_line,
+        model_files_widgets_row=model_files_widgets_row,
+        model_files_label=model_files_label,
+        model_files_desc_label=model_files_desc_label,
+        model_files_btn=model_files_btn,
+        model_files_divider_line=model_files_divider_line,
     )

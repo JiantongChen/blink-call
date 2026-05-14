@@ -9,7 +9,12 @@ from PySide6.QtCore import QStandardPaths
 
 from blink_call.utils.helper import Helper
 
-ViTA_ROOT_PATH = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "blink_call" / "ViTA"
+ViTA_ROOT_PATH = (
+    Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
+    / "blink_call"
+    / "blink_call_model_files"
+    / "ViTA"
+)
 
 
 class EyeState(Enum):
@@ -60,8 +65,8 @@ class EyeStateClassifier:
             options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
 
             self.session = ort.InferenceSession(str(model_path.resolve()), providers=providers, sess_options=options)
-        except Exception as e:
-            self.load_error = str(e)
+        except Exception as exc:
+            self.load_error = str(exc)
 
     def classify(self, eye_roi):
         if eye_roi is None:
@@ -94,8 +99,8 @@ class EyeStateClassifier:
                     f"label={model_label}, confidence={confidence:.3f}, state={state}, elapsed_ms={elapsed_ms:.1f}"
                 ),
             )
-        except Exception as e:
-            return self._return_data(debug_info=f"inference_error: {e}")
+        except Exception as exc:
+            return self._return_data(debug_info=f"inference_error: {exc}")
 
     def _preprocess(self, eye_roi):
         if not hasattr(eye_roi, "shape") or eye_roi.size == 0:

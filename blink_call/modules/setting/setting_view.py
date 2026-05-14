@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from blink_call.core.model_files_manager import ModelFilesManager
 from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.modules.setting.subview import (
@@ -27,7 +28,7 @@ from blink_call.modules.setting.subview import (
     build_general_page,
     build_other_page,
 )
-from blink_call.widget import NoWheelSpinBox
+from blink_call.widget import InteractionBlockOverlay, NoWheelSpinBox
 
 
 class SettingView(QWidget):
@@ -40,6 +41,7 @@ class SettingView(QWidget):
         self.blink_call_audio_file_values = [f"ring_{i:02d}.wav" for i in range(1, 11)]
         self.blink_call_audio_duration_values = [10, 30, 60, 300, 600, 1800, 3600, -1]
         self._preview_sound = QSoundEffect(self)
+        self.model_files_manager = ModelFilesManager()
 
         self.setObjectName("settingOverlay")
 
@@ -49,6 +51,10 @@ class SettingView(QWidget):
         self.panel = QFrame()
         self.panel.setObjectName("settingPanel")
         root_layout.addWidget(self.panel)
+
+        self.model_files_block_overlay = InteractionBlockOverlay(self)
+        self.model_files_block_overlay.setObjectName("settingModelFilesBlockOverlay")
+        self.model_files_block_overlay.hide()
 
         panel_layout = QVBoxLayout(self.panel)
         panel_layout.setContentsMargins(20, 20, 20, 20)
@@ -184,6 +190,7 @@ class SettingView(QWidget):
         self.blink_call_add_sequence_btn.clicked.connect(self.on_add_blink_call_step)
         self.blink_call_audio_preview_btn.clicked.connect(self.on_preview_blink_call_audio)
         self.blink_call_audio_volume_slider.valueChanged.connect(self._update_blink_call_audio_volume_text)
+        self.model_files_btn.clicked.connect(lambda: self.model_files_manager.start_download_or_update(timeout_s=10.0))
 
         for idx, file_name in enumerate(self.blink_call_audio_file_values, start=1):
             self.blink_call_audio_file_combo.addItem(f"Audio {idx}", file_name)
@@ -205,6 +212,10 @@ class SettingView(QWidget):
         self.start_service_btn.clicked.connect(self.on_start_service)
         self.debug_log_path_choose_btn.clicked.connect(self.on_choose_debug_log_dir)
         self.vm.close_requested.connect(self.hide)
+        self.model_files_manager.status_changed.connect(self.on_model_files_status_changed)
+        self.model_files_manager.download_started.connect(self.on_model_files_download_started)
+        self.model_files_manager.download_progress.connect(self.on_model_files_download_progress)
+        self.model_files_manager.download_finished.connect(self.on_model_files_download_finished)
 
         self.on_switch_setting_page(0)
         self.refresh_from_local_config()
@@ -355,6 +366,8 @@ class SettingView(QWidget):
         self.service_camera_id.setValue(int(self.vm.get_config("local_service.camera_id") or 0))
         self.service_port.setValue(int(self.vm.get_config("local_service.port") or 10000))
 
+        self.model_files_manager.start_check_status(timeout_s=10.0)
+
         self._apply_language()
 
     def _apply_language(self):
@@ -396,6 +409,9 @@ class SettingView(QWidget):
         self.blink_call_audio_preview_btn.setText(i18n["blink_call_audio_preview_btn"])
         self.blink_call_audio_volume_label.setText(i18n["blink_call_audio_volume_label"])
         self.blink_call_audio_duration_label.setText(i18n["blink_call_audio_duration_label"])
+        self.model_files_label.setText(i18n["model_files_label"])
+        self.model_files_desc_label.setText("")
+        self.model_files_btn.setText(i18n["model_files_btn_download_update"])
 
         for idx in range(len(self.blink_call_audio_file_values)):
             self.blink_call_audio_file_combo.setItemText(idx, f'{i18n["blink_call_audio_option_prefix"]} {idx + 1}')
@@ -588,6 +604,40 @@ class SettingView(QWidget):
         self._preview_sound.setVolume(float(self.blink_call_audio_volume_slider.value()) / 100.0)
         self._preview_sound.play()
 
+    def on_model_files_status_changed(self, payload=None):
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        desc_text = f"{i18n.get(payload['desc_key'], '')} {payload['reason_detail']}"
+
+        self.model_files_desc_label.setText(desc_text)
+        self.model_files_btn.setEnabled(payload.get("button_enabled", False))
+
+    def on_model_files_download_started(self):
+        self.model_files_btn.setEnabled(False)
+        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+
+        self.model_files_block_overlay.setGeometry(0, 0, self.width(), self.height())
+        self.model_files_block_overlay.show_progress(i18n.get("model_files_status_downloading", ""), determinate=True)
+        self.model_files_block_overlay.set_progress(0)
+        self.model_files_block_overlay.show()
+        self.model_files_block_overlay.raise_()
+
+    def on_model_files_download_progress(self, progress: dict):
+        value = int(max(0, min(100, progress.get("progress", 0))))
+        filename = progress.get("filename", "")
+
+        self.model_files_block_overlay.set_progress(value)
+        if filename:
+            i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+            self.model_files_block_overlay.set_title(f'{i18n["model_files_status_downloading"]}\n{filename}')
+
+    def on_model_files_download_finished(self, success: bool):
+        self.model_files_block_overlay.hide()
+
+        if success:
+            self.save_btn.click()
+        else:
+            self.model_files_btn.setEnabled(True)
+
     def _update_blink_call_audio_volume_text(self, value: int):
         self.blink_call_audio_volume_value_label.setText(f"{int(value)}%")
 
@@ -629,6 +679,10 @@ class SettingView(QWidget):
     def showEvent(self, event):
         self.refresh_from_local_config()
         super().showEvent(event)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.model_files_block_overlay.setGeometry(0, 0, self.width(), self.height())
 
     def hideEvent(self, event):
         self._preview_sound.stop()

@@ -2,6 +2,7 @@ flask
 insightface
 logging
 markdown
+modelscope
 nuitka
 onnxruntime
 opencv-python

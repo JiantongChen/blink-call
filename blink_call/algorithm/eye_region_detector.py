@@ -9,7 +9,10 @@ from blink_call.utils.head_pose_estimator import InsightFaceHeadPose
 from blink_call.utils.helper import Helper
 
 INSIGHT_FACE_ROOT_PATH = (
-    Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "blink_call" / "insightface"
+    Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
+    / "blink_call"
+    / "blink_call_model_files"
+    / "insightface"
 )
 
 
@@ -65,8 +68,8 @@ class EyeRegionDetector:
         started = time.perf_counter()
         try:
             faces = self.app.get(frame, max_num=1)
-        except Exception as e:
-            return self._return_data(debug_info=f"insightface inference error: {str(e)}")
+        except Exception as exc:
+            return self._return_data(debug_info=f"insightface inference error: {str(exc)}")
 
         if len(faces) == 0:
             return self._return_data(debug_info="no face detected")

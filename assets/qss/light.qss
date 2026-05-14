@@ -25,7 +25,7 @@ QPushButton#homeExitBtn {
     color: #111827;
     border: 1px solid #111827;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -61,6 +61,22 @@ QPlainTextEdit#homeDebugInfo {
 
 QWidget#homeCallBlockOverlay {
     background-color: rgba(0, 0, 0, 96);
+}
+
+QFrame#homeModelFilesHint {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+}
+
+QLabel#homeModelFilesHintText {
+    color: #111827;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+QLabel#homeModelFilesHintIcon {
+    background: transparent;
 }
 
 QPushButton#homeCallCloseBtn {
@@ -275,4 +291,72 @@ QPushButton#settingResetBtn:hover {
 
 QPushButton#settingResetBtn:pressed {
     background: #991b1b;
+}
+
+QWidget#settingModelFilesRow {
+    min-height: 36px;
+}
+
+QLineEdit#settingModelFilesDesc {
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+QPushButton#settingModelFilesBtn {
+    min-height: 32px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 14px;
+    background: #2563eb;
+    color: #ffffff;
+}
+
+QPushButton#settingModelFilesBtn:hover {
+    background: #1d4ed8;
+}
+
+QPushButton#settingModelFilesBtn:pressed {
+    background: #1e40af;
+}
+
+QPushButton#settingModelFilesBtn:disabled {
+    background: #cbd5e1;
+    color: #6b7280;
+}
+
+QWidget#settingModelFilesBlockOverlay {
+    background-color: rgba(0, 0, 0, 148);
+}
+
+QFrame#interactionOverlayPanel {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    border-radius: 10px;
+    min-width: 360px;
+    max-width: 460px;
+}
+
+QLabel#interactionOverlayTitle {
+    color: #111827;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+QProgressBar#interactionOverlayProgress {
+    min-height: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #f3f4f6;
+    text-align: center;
+}
+
+QProgressBar#interactionOverlayProgress::chunk {
+    border-radius: 5px;
+    background: #2563eb;
 }

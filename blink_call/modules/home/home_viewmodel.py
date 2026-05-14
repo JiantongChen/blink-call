@@ -7,7 +7,9 @@ from PySide6.QtGui import QImage
 from PySide6.QtMultimedia import QSoundEffect
 
 from blink_call.core.inference_worker import InferenceWorker
+from blink_call.core.model_files_manager import ModelFilesManager
 from blink_call.modules.home.home_model import HomeModel
+from blink_call.modules.setting.setting_i18n import SETTING_I18N
 from blink_call.modules.setting.setting_model import SettingModel
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.utils.debug_overlay import draw_debug
@@ -19,6 +21,7 @@ class HomeViewModel(QObject):
     local_service_status = Signal(bool)
     blink_progress_updated = Signal(dict)
     blink_call_alert_visibility = Signal(bool)
+    model_files_hint = Signal(dict)
 
     debug_mode_state = Signal(bool)
     show_debug_msg = Signal(str)
@@ -47,6 +50,7 @@ class HomeViewModel(QObject):
 
         self.setting_model = SettingModel()
         self.setting_vm = SettingViewModel(self.setting_model)
+        self.model_files_manager = ModelFilesManager()
         self.setting_vm.save_setting.connect(self.on_page_enter)
         self.setting_vm.start_local_service.connect(self.on_start_service)
 
@@ -93,6 +97,7 @@ class HomeViewModel(QObject):
         )
 
         self.local_service_status.emit(False)
+        self.model_files_hint.emit({"visible": False, "text": ""})
         self.clear_debug_msg.emit()
         self.debug_mode_state.emit(self.debug_mode)
 
@@ -187,7 +192,14 @@ class HomeViewModel(QObject):
         self.setting_popup = is_open
 
     def start_infer_worker(self):
+        self.model_files_hint.emit({"visible": False, "text": ""})
+
         if not bool(self.setting_vm.get_config("blink_call.enabled")):
+            return
+
+        if not self.model_files_manager.all_model_files_exists():
+            i18n = SETTING_I18N.get(self.setting_vm.get_config("ui.language"), SETTING_I18N["zh"])
+            self.model_files_hint.emit({"visible": True, "text": i18n["home_model_files_missing_hint"]})
             return
 
         if not self.infer_worker.isRunning():
