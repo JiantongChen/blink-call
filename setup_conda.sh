@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -o pipefail
 
 # Default environment name and project root path
@@ -30,10 +30,10 @@ if ! command -v conda &> /dev/null; then
     exit 1
 fi
 
-source $(conda info --base)/etc/profile.d/conda.sh
+source "$(conda info --base)/etc/profile.d/conda.sh"
 
-# Create the environment (skip if it already exists).
-if conda info --envs | grep -q "^$ENV_NAME\s"; then
+# Create the environment (skip if it already exists)
+if conda info --envs | grep -q "^$ENV_NAME\\s"; then
     echo "⚠️  Conda environment '$ENV_NAME' already exists. Skipping creation."
 else
     echo "📦 Creating conda environment '$ENV_NAME' with Python 3.10..."
@@ -51,11 +51,23 @@ echo -e "\n📦 Installing project dependencies..."
 
 pip install --upgrade pip
 
+INSIGHTFACE_PKG_DIR="$PROJECT_ROOT/third_party/insightface/python-package"
+if [[ ! -d "$INSIGHTFACE_PKG_DIR" ]]; then
+    echo "Missing directory: $INSIGHTFACE_PKG_DIR" >&2
+    echo "Please initialize submodules: git submodule update --init --recursive" >&2
+    exit 1
+fi
+
+pip install -e "$INSIGHTFACE_PKG_DIR" || {
+    echo "Failed to install local insightface package" >&2
+    exit 1
+}
+
 cd "$PROJECT_ROOT"
 pip install -e . || {
-    echo -e "❌ \033[1;31mFailed to install blink_call dependencies\033[0m" >&2
+    echo "❌ Failed to install blink_call dependencies" >&2
     exit 1
 }
 
 echo -e "\n✅ Setup completed successfully in conda environment '$ENV_NAME'!"
-echo -e "\n📌 To activate your environments, run:\nconda activate $ENV_NAME"
+echo -e "\n📌 To activate your environment, run:\nconda activate $ENV_NAME"

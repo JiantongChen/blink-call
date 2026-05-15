@@ -25,6 +25,11 @@ conda create -n blink_call python=3.10
 conda activate blink_call
 pip install --upgrade pip
 
+# Install local insightface package first
+cd third_party\insightface\python-package
+pip install -e .
+cd ..\..\..
+
 # Install main project
 pip install -e .
 ```

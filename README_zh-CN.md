@@ -28,7 +28,7 @@
 ---
 
 ## ✨ 用户使用
-如果你希望快速上手，请从这里开始：
+如果你希望立刻使用软件，请从这里开始：
 
 - 📦 **最新 Release ZIP**：[下载最新版本](https://github.com/JiantongChen/blink-call/releases/latest)
 - 📖 **用户指南**：*待补充*
