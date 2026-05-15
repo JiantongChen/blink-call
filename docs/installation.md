@@ -1,10 +1,10 @@
 # Installation on Linux/Windows
 
-This guide will help you quickly set up the development environment for the **blink-call** project on Linux/Windows.
+This guide will help you quickly set up the development environment for the **blink-call** project.
 
 ## 1. Clone the Repository
 ```bash
-git clone https://github.com/JiantongChen/blink-call.git
+git clone --recurse-submodules https://github.com/JiantongChen/blink-call.git
 cd blink-call
 ```
 
