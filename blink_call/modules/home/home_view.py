@@ -61,7 +61,7 @@ class HomeView(QWidget):
 
         self.setting_btn = QPushButton(i18n["settings"], self)
         self.setting_btn.setObjectName("homeSettingBtn")
-        self.setting_btn.setFixedSize(88, 36)
+        self.setting_btn.setFixedSize(100, 40)
         self.setting_btn.move(20, 20)
         self.setting_btn.clicked.connect(self.on_open_setting_popup)
 

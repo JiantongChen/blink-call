@@ -134,6 +134,7 @@ class SettingView(QWidget):
         self._attach_widgets(build_other_page(self.content_stack))
 
         self.bind_combo(self.language_combo, "ui.language")
+        self.bind_combo(self.theme_combo, "ui.theme")
         self.bind_spinbox(self.local_camera_id, "camera.local_camera_id")
         self.bind_line_edit(self.remote_ip, "camera.remote.ip")
         self.bind_spinbox(self.remote_port, "camera.remote.port")
@@ -299,6 +300,10 @@ class SettingView(QWidget):
         self.language_combo.blockSignals(True)
         self.language_combo.setCurrentIndex(0 if language_idx < 0 else language_idx)
         self.language_combo.blockSignals(False)
+        theme_idx = self.theme_combo.findData(self.vm.get_config("ui.theme"))
+        self.theme_combo.blockSignals(True)
+        self.theme_combo.setCurrentIndex(0 if theme_idx < 0 else theme_idx)
+        self.theme_combo.blockSignals(False)
 
         if self.vm.get_config("camera.mode") == "remote":
             self.camera_remote_mode_radio.setChecked(True)
@@ -388,6 +393,9 @@ class SettingView(QWidget):
         self.other_nav_btn.setText(i18n["other_title"])
 
         self.language_label.setText(i18n["language"])
+        self.theme_label.setText(i18n["theme"])
+        self.theme_combo.setItemText(0, i18n["theme_light"])
+        self.theme_combo.setItemText(1, i18n["theme_dark"])
 
         self.choose_camera_source_label.setText(i18n["choose_camera_source_label"])
         self.camera_local_mode_radio.setText(i18n["camera_local_mode_radio"])
@@ -505,7 +513,8 @@ class SettingView(QWidget):
         duration_spin.setValue(min(5.0, max(0.5, duration_s)))
 
         remove_btn = QPushButton(i18n["blink_call_remove_step_btn"])
-        remove_btn.setFixedWidth(100)
+        remove_btn.setObjectName("settingNormalButton")
+        remove_btn.setFixedSize(160, 30)
 
         row_layout.addWidget(state_combo)
         row_layout.addWidget(duration_label)

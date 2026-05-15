@@ -3,6 +3,7 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from blink_call.core.config_manager import ConfigManager
 from blink_call.core.dependency_injection import DI
 from blink_call.core.navigation import Navigation
 from blink_call.core.theme_manager import ThemeManager
@@ -30,7 +31,11 @@ def create_app():
 
     # Load theme
     theme = ThemeManager(app)
-    theme.load("light.qss")
+    ui_config = ConfigManager.get_local_config().get("ui") or {}
+    theme_name = str(ui_config.get("theme") or "light").strip().lower()
+    if theme_name not in {"light", "dark"}:
+        theme_name = "light"
+    theme.load(f"{theme_name}.qss")
 
     # Initialize the main window
     main_window = MainWindow()
@@ -39,6 +44,9 @@ def create_app():
     # Add pages
     create_page("home", main_window, nav)
     DI.get("home_vm").setting_vm.language_changed.connect(main_window.set_ui_language)
+    DI.get("home_vm").setting_vm.theme_changed.connect(
+        lambda value: theme.load(f'{"dark" if str(value).lower() == "dark" else "light"}.qss')
+    )
 
     # Default page
     nav.to("home")

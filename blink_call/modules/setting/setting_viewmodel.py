@@ -6,6 +6,7 @@ from blink_call.modules.setting.setting_model import SettingModel
 class SettingViewModel(QObject):
     close_requested = Signal()
     language_changed = Signal(str)
+    theme_changed = Signal(str)
     save_setting = Signal()
     start_local_service = Signal()
     start_recording_requested = Signal()
@@ -23,17 +24,20 @@ class SettingViewModel(QObject):
     def save_config(self):
         self.model.save_config()
         self.language_changed.emit(self.get_config("ui.language"))
+        self.theme_changed.emit(self.get_config("ui.theme"))
         self.save_setting.emit()
         self.close_requested.emit()
 
     def close(self):
         self.model.update_config_from_file()
         self.language_changed.emit(self.get_config("ui.language"))
+        self.theme_changed.emit(self.get_config("ui.theme"))
         self.close_requested.emit()
 
     def restore_default_config(self):
         self.model.restore_default_config()
         self.language_changed.emit(self.get_config("ui.language"))
+        self.theme_changed.emit(self.get_config("ui.theme"))
         self.close_requested.emit()
         self.save_setting.emit()
 
@@ -44,5 +48,6 @@ class SettingViewModel(QObject):
     def start_recording(self):
         self.model.save_config()
         self.language_changed.emit(self.get_config("ui.language"))
+        self.theme_changed.emit(self.get_config("ui.theme"))
         self.close_requested.emit()
         self.start_recording_requested.emit()

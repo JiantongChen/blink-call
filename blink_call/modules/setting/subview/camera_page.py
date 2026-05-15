@@ -51,7 +51,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
 
     camera_page = QFrame()
     camera_page.setObjectName("settingContentPage")
-    camera_page.setMinimumWidth(550)
+    camera_page.setMinimumWidth(650)
     camera_scroll.setWidget(camera_page)
 
     camera_layout = QVBoxLayout(camera_page)
@@ -113,7 +113,7 @@ def build_camera_page(content_stack: QStackedWidget) -> CameraPageWidgets:
     start_service_label.setObjectName("settingSubSectionTitle")
     start_service_btn = QPushButton("Start local camera service")
     start_service_btn.setObjectName("settingStartServiceBtn")
-    start_service_btn.setFixedWidth(260)
+    start_service_btn.setFixedSize(230, 36)
     start_btn_row.addWidget(start_service_label)
     start_btn_row.addStretch()
     start_btn_row.addWidget(start_service_btn)

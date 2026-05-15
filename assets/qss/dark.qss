@@ -1,6 +1,6 @@
 /* Base */
 QWidget {
-    color: #1f2937;
+    color: #e5e7eb;
     font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
     font-size: 14px;
 }
@@ -11,29 +11,29 @@ QWidget#homeView {
 }
 
 QLabel#homeVideoLabel {
-    color: #374151;
+    color: #e5e7eb;
     font-size: 24px;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.72);
+    background: #000000;
     padding: 8px 12px;
     border-radius: 8px;
 }
 
 QPushButton#homeSettingBtn {
-    background: rgba(255, 255, 255, 0.92);
-    color: #111827;
-    border: 1px solid #111827;
+    background: #2f2f2f;
+    color: #f3f4f6;
+    border: 1px solid #5a5a5a;
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
 }
 
 QPushButton#homeSettingBtn:hover {
-    background: #ffffff;
+    background: #3b3b3b;
 }
 
 QPushButton#homeSettingBtn:pressed {
-    background: #e5e7eb;
+    background: #242424;
 }
 
 QPushButton#homeExitBtn {
@@ -53,7 +53,8 @@ QPushButton#homeExitBtn:pressed {
 }
 
 QPlainTextEdit#homeDebugInfo {
-    background-color: rgba(230, 230, 230, 170);
+    background-color: rgba(17, 17, 17, 180);
+    color: #e5e7eb;
 }
 
 QPushButton#homeRecordStopBtn {
@@ -80,13 +81,13 @@ QWidget#homeCallBlockOverlay {
 }
 
 QFrame#homeModelFilesHint {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #d1d5db;
+    background: rgba(12, 12, 12, 0.95);
+    border: 1px solid #3f3f46;
     border-radius: 8px;
 }
 
 QLabel#homeModelFilesHintText {
-    color: #111827;
+    color: #f3f4f6;
     font-size: 16px;
     font-weight: 600;
 }
@@ -119,18 +120,19 @@ QWidget#settingOverlay {
 }
 
 QFrame#settingPanel {
-    background: #ffffff;
+    background: #262626;
     border-radius: 12px;
 }
 
 QLabel#settingTitle {
     font-size: 22px;
     font-weight: 700;
-    color: #111827;
+    color: #f9fafb;
 }
 
 QFrame#settingLeftNav {
-    background: #ffffff;
+    background: #2a2a2a;
+    border: 1px solid #3c3c3c;
     border-radius: 10px;
 }
 
@@ -140,7 +142,7 @@ QScrollArea#settingRightScroll {
 }
 
 QFrame#settingCenterDivider {
-    background: #e5e7eb;
+    background: #4a4a4a;
     min-width: 1px;
     max-width: 1px;
     border: none;
@@ -151,7 +153,7 @@ QWidget#settingNavRow {
 }
 
 QWidget#settingNavRow[active="true"] {
-    background: #e5e7eb;
+    background: #3a3a3a;
 }
 
 QLabel#settingNavIconSlot {
@@ -160,13 +162,13 @@ QLabel#settingNavIconSlot {
 }
 
 QLabel#settingNavIconSlot[active="true"] {
-    background: #e5e7eb;
+    background: #3a3a3a;
 }
 
 QPushButton#settingNavBtn {
     min-height: 40px;
     text-align: left;
-    color: #374151;
+    color: #d1d5db;
     font-size: 16px;
     font-weight: 700;
     padding: 0 10px;
@@ -176,31 +178,39 @@ QPushButton#settingNavBtn {
 }
 
 QWidget#settingNavRow[active="true"] QPushButton#settingNavBtn {
-    color: #1f2937;
+    color: #f9fafb;
 }
 
 QFrame#settingContentPage {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: #2d2d2d;
+    border: 1px solid #404040;
     border-radius: 10px;
 }
 
 QLabel#settingSubSectionTitle {
     font-size: 14px;
     font-weight: 700;
-    color: #1f2937;
+    color: #f3f4f6;
 }
 
 QFrame#settingItemDivider {
-    background: #c6ced8;
+    background: #4a4a4a;
     min-height: 1px;
     max-height: 1px;
     border: none;
 }
 
 
+QComboBox,
+QLineEdit,
+NoWheelSpinBox {
+    background: #353535;
+    color: #f3f4f6;
+    padding: 0 8px;
+}
+
 QRadioButton {
-    color: #111827;
+    color: #f3f4f6;
 }
 
 QRadioButton::indicator {
@@ -209,9 +219,9 @@ QRadioButton::indicator {
 }
 
 QRadioButton::indicator:unchecked {
-    border: 2px solid #6b7280;
+    border: 2px solid #9ca3af;
     border-radius: 7px;
-    background: #ffffff;
+    background: #2d2d2d;
 }
 
 QRadioButton::indicator:checked {
@@ -293,21 +303,21 @@ QPushButton#settingResetBtn:pressed {
 }
 
 QPushButton#settingNormalButton {
-    border: 1px solid #d1d5db;
+    border: 1px solid #666666;
     border-radius: 8px;
-    background: #f3f4f6;
-    color: #1f2937;
+    background: #3a3a3a;
+    color: #f3f4f6;
     font-size: 13px;
     font-weight: 600;
     padding: 0 2px;
 }
 
 QPushButton#settingNormalButton:hover {
-    background: #e5e7eb;
+    background: #4a4a4a;
 }
 
 QPushButton#settingNormalButton:pressed {
-    background: #d1d5db;
+    background: #2f2f2f;
 }
 
 QWidget#settingModelFilesRow {
@@ -315,7 +325,7 @@ QWidget#settingModelFilesRow {
 }
 
 QLineEdit#settingModelFilesDesc {
-    color: #4b5563;
+    color: #a1a1aa;
     font-size: 13px;
     font-weight: 500;
     border: none;
@@ -328,25 +338,26 @@ QWidget#settingModelFilesBlockOverlay {
 }
 
 QFrame#interactionOverlayPanel {
-    background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.16);
+    background: #2c2c2c;
+    border: 1px solid #575757;
     border-radius: 10px;
     min-width: 360px;
     max-width: 460px;
 }
 
 QLabel#interactionOverlayTitle {
-    color: #111827;
+    color: #f3f4f6;
     font-size: 14px;
     font-weight: 700;
 }
 
 QProgressBar#interactionOverlayProgress {
     min-height: 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #575757;
     border-radius: 6px;
-    background: #f3f4f6;
+    background: #3a3a3a;
     text-align: center;
+    color: #f3f4f6;
 }
 
 QProgressBar#interactionOverlayProgress::chunk {

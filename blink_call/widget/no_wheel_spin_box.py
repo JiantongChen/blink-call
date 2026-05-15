@@ -6,7 +6,7 @@ class NoWheelSpinBox(QDoubleSpinBox):
         super().__init__(parent)
 
         self.setDecimals(0)
-        self.setFixedSize(120, 42)
+        self.setFixedSize(140, 40)
 
     def wheelEvent(self, event):
         event.ignore()

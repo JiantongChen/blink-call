@@ -11,7 +11,7 @@ class ConfigManager:
     def get_default_config(cls):
         default_log_dir = str(Path.home() / "Desktop")
         _default_config = {
-            "ui": {"language": "zh"},
+            "ui": {"language": "zh", "theme": "light"},
             "camera": {"mode": "local", "local_camera_id": 0, "remote": {"ip": "0.0.0.0", "port": 17925}},
             "local_service": {"camera_id": 0, "port": 17925},
             "recording": {"max_duration_min": 1, "local_dir": default_log_dir},

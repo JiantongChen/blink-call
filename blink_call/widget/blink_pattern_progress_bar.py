@@ -80,9 +80,9 @@ class BlinkPatternProgressBar(QWidget):
             seg_rect = QRectF(x, float(content_rect.top()), seg_width, height)
 
             if item["state"] == "closed":
-                seg_color = QColor(255, 251, 211)  # light yellow
+                seg_color = QColor(254, 243, 199)
             else:
-                seg_color = QColor(211, 255, 218)  # light green
+                seg_color = QColor(209, 250, 229)
 
             painter.fillRect(seg_rect, seg_color)
             segment_boundaries.append(x)
@@ -93,7 +93,7 @@ class BlinkPatternProgressBar(QWidget):
         if progress_w > 0:
             painter.fillRect(
                 QRectF(float(content_rect.left()), float(content_rect.top()), progress_w, height),
-                QColor(46, 125, 50, 200),
+                QColor(101, 163, 13, 200),
             )
 
         painter.setPen(QPen(QColor(150, 150, 150), 1))

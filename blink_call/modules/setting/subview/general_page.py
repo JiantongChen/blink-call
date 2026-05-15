@@ -18,6 +18,8 @@ from blink_call.widget import HDividerLine
 class GeneralPageWidgets:
     language_label: QLabel
     language_combo: QComboBox
+    theme_label: QLabel
+    theme_combo: QComboBox
 
 
 def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
@@ -31,7 +33,7 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
 
     general_page = QFrame()
     general_page.setObjectName("settingContentPage")
-    general_page.setMinimumWidth(550)
+    general_page.setMinimumWidth(650)
     general_scroll.setWidget(general_page)
 
     general_layout = QVBoxLayout(general_page)
@@ -52,7 +54,26 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     language_row.addWidget(language_combo)
     general_layout.addLayout(language_row)
 
+    theme_row = QHBoxLayout()
+    theme_row.setSpacing(16)
+    theme_label = QLabel("Theme")
+    theme_label.setObjectName("settingSubSectionTitle")
+    theme_combo = QComboBox()
+    theme_combo.setFixedSize(220, 40)
+    theme_combo.addItem("Light", "light")
+    theme_combo.addItem("Dark", "dark")
+
+    theme_row.addWidget(theme_label)
+    theme_row.addStretch()
+    theme_row.addWidget(theme_combo)
+    general_layout.addLayout(theme_row)
+
     general_layout.addWidget(HDividerLine())
     general_layout.addStretch()
 
-    return GeneralPageWidgets(language_label=language_label, language_combo=language_combo)
+    return GeneralPageWidgets(
+        language_label=language_label,
+        language_combo=language_combo,
+        theme_label=theme_label,
+        theme_combo=theme_combo,
+    )
