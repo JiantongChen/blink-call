@@ -52,8 +52,8 @@
 
 本仓库不负责模型训练与 ONNX 模型文件替换。相关模型的离线训练资源可在以下仓库中获取：
 
-- 人脸检测：*待补充*
-- 2D 人脸 106 关键点检测：*待补充*
+- 人脸检测：[SCRFD](https://github.com/deepinsight/insightface/tree/master/detection/scrfd)
+- 2D 人脸 106 关键点检测：[SDUNets](https://github.com/deepinsight/insightface/tree/master/alignment/heatmap)
 - 眼睛状态分类：[项目地址](https://github.com/Ole7755/ViTA)
 
 获取对应 ONNX 模型文件后，请替换该 ModelScope [模型库](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files)中的文件。
