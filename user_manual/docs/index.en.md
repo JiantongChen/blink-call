@@ -13,7 +13,7 @@
 
 ## Download Software
 
-Choose any one of the following options to download:
+Choose any one of the following options to download:  
 - [Baidu Netdisk](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)  
 - [Quark Netdisk](https://pan.quark.cn/s/e96254bb1153)  
 - [GitHub](https://github.com/JiantongChen/blink-call/releases/latest)
