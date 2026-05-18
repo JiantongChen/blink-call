@@ -1,45 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
-        <loc>None./</loc>
+        <loc>https://jiantongchen.github.io/blink-call/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="zh" href="None"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/"/>
     </url>
     <url>
-        <loc>Nonequick-start/</loc>
+        <loc>https://jiantongchen.github.io/blink-call/quick-start/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="zh" href="Nonequick-start/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/quick-start/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/quick-start/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/quick-start/"/>
     </url>
     <url>
-        <loc>Nonesettings/</loc>
+        <loc>https://jiantongchen.github.io/blink-call/settings/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="zh" href="Nonesettings/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/settings/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/settings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/settings/"/>
     </url>
     <url>
-        <loc>Noneen/</loc>
+        <loc>https://jiantongchen.github.io/blink-call/en/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/"/>
-        <xhtml:link rel="alternate" hreflang="zh" href="None"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/"/>
     </url>
     <url>
-        <loc>Noneen/quick-start/</loc>
+        <loc>https://jiantongchen.github.io/blink-call/en/quick-start/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/quick-start/"/>
-        <xhtml:link rel="alternate" hreflang="zh" href="Nonequick-start/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/quick-start/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/quick-start/"/>
     </url>
     <url>
-        <loc>Noneen/settings/</loc>
+        <loc>https://jiantongchen.github.io/blink-call/en/settings/</loc>
         <lastmod>2026-05-18</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneen/settings/"/>
-        <xhtml:link rel="alternate" hreflang="zh" href="Nonesettings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://jiantongchen.github.io/blink-call/en/settings/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://jiantongchen.github.io/blink-call/settings/"/>
     </url>
 </urlset>
