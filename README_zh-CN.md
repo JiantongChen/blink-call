@@ -8,9 +8,9 @@
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3.10%2B-blue">
 <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-orange">
-<img src="https://img.shields.io/badge/Type-CLI%20%7C%20GUI-green">
+<img src="https://img.shields.io/badge/Type-GUI-green">
 <img src="https://img.shields.io/badge/Status-Active-success">
-<img src="https://img.shields.io/badge/License-Public-success">
+<img src="https://img.shields.io/badge/License-MIT-success">
 </p>
 
 ## 📘 概述
@@ -42,9 +42,29 @@
 本项目提供开发文档与环境配置说明，帮助你快速开始开发。
 
 ### 🚀 快速安装与启动
-- 完整安装说明见 [docs/installation.md](docs/installation.md)。
-- 启动应用：
+- 步骤一: 克隆本仓库至本地
   ```bash
+  git clone --recurse-submodules https://github.com/JiantongChen/blink-call.git
+  cd blink-call
+  ```
+- 步骤二: 安装Python依赖环境
+
+  对于Linux系统
+  ```bash
+  # default conda environment name -> blink_call
+  bash ./scripts/linux/setup_conda.sh [--name <env_name>]
+  ```
+
+  对于Windows系统
+  ```powershell
+  # Default conda environment name: blink_call
+  # Ensure that the `conda` command is available in your terminal,
+  # or run this in Anaconda Prompt.
+  powershell -ExecutionPolicy Bypass -File ./scripts/windows/setup_conda.ps1 [-Name <env_name>]
+  ```
+- 步骤三: 启动软件
+  ```bash
+  conda activate blink_call
   python -m blink_call.setup_app
   ```
 
@@ -54,7 +74,7 @@
 
 - 人脸检测：[SCRFD](https://github.com/deepinsight/insightface/tree/master/detection/scrfd)
 - 2D 人脸 106 关键点检测：[SDUNets](https://github.com/deepinsight/insightface/tree/master/alignment/heatmap)
-- 眼睛状态分类：[项目地址](https://github.com/Ole7755/ViTA)
+- 眼睛状态分类：[ViTA](https://github.com/Ole7755/ViTA)
 
 获取对应 ONNX 模型文件后，请替换该 ModelScope [模型库](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files)中的文件。
 
@@ -64,19 +84,11 @@
 
 ### 📦 使用 Nuitka 打包
 开发完成后，可使用 Nuitka 将软件打包为独立分发版本。命令如下：
-```powershell
-nuitka ^
-  --standalone ^
-  --windows-console-mode=disable ^
-  --windows-icon-from-ico=assets/icons/app_icon.ico ^
-  --enable-plugin=pyside6 ^
-  --include-data-file=VERSION=VERSION ^
-  --include-data-file=LICENSE=LICENSE ^
-  --include-data-dir=assets=assets ^
-  --jobs=8 ^
-  --output-filename=BlinkCall.exe ^
-  blink_call/setup_app.py
-```
+- 对于Windows系统
+  ```powershell
+  conda activate blink_call
+  powershell -ExecutionPolicy Bypass -File ./scripts/windows/build_nuitka.ps1
+  ```
 
 ---
 

@@ -8,9 +8,9 @@
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3.10%2B-blue">
 <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-orange">
-<img src="https://img.shields.io/badge/Type-CLI%20%7C%20GUI-green">
+<img src="https://img.shields.io/badge/Type-GUI-green">
 <img src="https://img.shields.io/badge/Status-Active-success">
-<img src="https://img.shields.io/badge/License-Public-success">
+<img src="https://img.shields.io/badge/License-MIT-success">
 </p>
 
 ## 📘 Overview
@@ -42,9 +42,29 @@ If you want to get started quickly, begin here:
 This project includes developer documentation and setup guidance to help you get started quickly.
 
 ### 🚀 Quick Setup & Launch
-- See [docs/installation.md](docs/installation.md) for the complete installation guide.
-- Start the application:
+- Step 1: Clone the Repository
   ```bash
+  git clone --recurse-submodules https://github.com/JiantongChen/blink-call.git
+  cd blink-call
+  ```
+- Step 2: Setup Conda Environment and Dependencies
+
+  For Linux
+  ```bash
+  # default conda environment name -> blink_call
+  bash ./scripts/linux/setup_conda.sh [--name <env_name>]
+  ```
+
+  For Windows
+  ```powershell
+  # Default conda environment name: blink_call
+  # Ensure that the `conda` command is available in your terminal,
+  # or run this in Anaconda Prompt.
+  powershell -ExecutionPolicy Bypass -File ./scripts/windows/setup_conda.ps1 [-Name <env_name>]
+  ```
+- Step 3: Start the Application
+  ```bash
+  conda activate blink_call
   python -m blink_call.setup_app
   ```
 
@@ -54,7 +74,7 @@ This repository does not handle model training and ONNX model file replacement. 
 
 - Face Detection: [SCRFD](https://github.com/deepinsight/insightface/tree/master/detection/scrfd)
 - 2D Face 106 Keypoint Detection: [SDUNets](https://github.com/deepinsight/insightface/tree/master/alignment/heatmap)
-- Eye State Classification: [Project](https://github.com/Ole7755/ViTA)
+- Eye State Classification: [ViTA](https://github.com/Ole7755/ViTA)
 
 After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files).
 
@@ -64,19 +84,11 @@ After obtaining the corresponding ONNX model files, replace the files in the Mod
 
 ### 📦 Building with Nuitka
 After development is completed, the software can be built with Nuitka for standalone distribution. The Nuitka build command is shown below.
-```powershell
-nuitka ^
-  --standalone ^
-  --windows-console-mode=disable ^
-  --windows-icon-from-ico=assets/icons/app_icon.ico ^
-  --enable-plugin=pyside6 ^
-  --include-data-file=VERSION=VERSION ^
-  --include-data-file=LICENSE=LICENSE ^
-  --include-data-dir=assets=assets ^
-  --jobs=8 ^
-  --output-filename=BlinkCall.exe ^
-  blink_call/setup_app.py
-```
+- For Windows
+  ```powershell
+  conda activate blink_call
+  powershell -ExecutionPolicy Bypass -File ./scripts/windows/build_nuitka.ps1
+  ```
 
 ---
 

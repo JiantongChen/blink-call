@@ -1,11 +1,11 @@
-﻿#!/bin/bash
+#!/bin/bash
 set -o pipefail
 
 # Default environment name and project root path
 ENV_NAME="blink_call"
-PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
-# Parsing command line arguments
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
         --name)
@@ -47,19 +47,19 @@ fi
 conda activate "$ENV_NAME"
 
 # Install dependencies
-echo -e "\n📦 Installing project dependencies..."
-
+echo ""
+echo "Installing project dependencies..."
 pip install --upgrade pip
 
 INSIGHTFACE_PKG_DIR="$PROJECT_ROOT/third_party/insightface/python-package"
 if [[ ! -d "$INSIGHTFACE_PKG_DIR" ]]; then
-    echo "Missing directory: $INSIGHTFACE_PKG_DIR" >&2
+    echo "❌ Missing directory: $INSIGHTFACE_PKG_DIR" >&2
     echo "Please initialize submodules: git submodule update --init --recursive" >&2
     exit 1
 fi
 
 pip install -e "$INSIGHTFACE_PKG_DIR" || {
-    echo "Failed to install local insightface package" >&2
+    echo "❌ Failed to install local insightface package" >&2
     exit 1
 }
 
@@ -69,5 +69,13 @@ pip install -e . || {
     exit 1
 }
 
-echo -e "\n✅ Setup completed successfully in conda environment '$ENV_NAME'!"
+echo ""
+echo "Installing git hooks with pre-commit..."
+pre-commit install || {
+    echo "❌ Failed to install pre-commit git hooks" >&2
+    exit 1
+}
+
+echo ""
+echo -e "\n✅ Setup completed successfully in conda environment '$ENV_NAME'."
 echo -e "\n📌 To activate your environment, run:\nconda activate $ENV_NAME"
