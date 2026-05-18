@@ -7,6 +7,7 @@ Switch between Chinese and English display language.
 Switch between light or dark appearance. This setting only affects the display theme and does not impact software functionality.
 
 ## [Camera]-[Select Video Source]
+
 - **Local Camera**: Use the built-in or external camera on the current computer.  
 - **Remote Camera**: Use the built-in or external camera of another computer on the local network.
 
@@ -21,6 +22,7 @@ Choose to show or hide the blink call progress bar at the top of the home screen
 
 ## [Blink Call]-[Blink Sequence]
 Customize the blink action sequence with the following requirements:  
+
 - Minimum of 1 item, can add more as needed.  
 - Each item can be either eyes open or eyes closed.  
 - Duration for each item ranges from 0.5 seconds to 5 seconds.  
@@ -37,6 +39,7 @@ Adjust the audio playback volume. Note: This is the software's volume control an
 
 ## [Blink Call]-[Audio Play Duration]
 Set the duration for audio playback when a call is triggered:  
+
 - Minimum duration: 10 seconds.  
 - Maximum duration: Unlimited.
 
@@ -45,6 +48,7 @@ Download or update the machine learning model files required by the software.
 
 ## [Other]-[Record Current Camera Data]
 Start recording the video data displayed in the software and save it to a specified location (default is Desktop). Configuration details:  
+
 - Minimum recording duration: 1 minute.  
 - Maximum recording duration: 1440 minutes (24 hours).
 
