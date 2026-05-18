@@ -30,11 +30,14 @@
 ## ✨ 用户使用
 如果你希望立刻使用软件，请从这里开始：
 
-- 📦 **最新 Release ZIP**：[下载最新版本](https://github.com/JiantongChen/blink-call/releases/latest)
-- 📖 **用户指南**：*待补充*
+- 📦 你可以从以下任意一个地址下载**最新版本的软件**：
+  - [GitHub Latest Release](https://github.com/JiantongChen/blink-call/releases/latest)
+  - [百度网盘](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
+  - [夸克网盘](https://pan.quark.cn/s/e96254bb1153)
+- 📖 **用户指南**：[在线用户手册](https://jiantongchen.github.io/blink-call/)
 
 > [!NOTE]
-> 当前仅有 Windows 操作系统的软件可直接下载并使用，。
+> 当前仅有 Windows 操作系统的软件可直接下载并使用。
 
 ---
 
@@ -89,6 +92,31 @@
   conda activate blink_call
   powershell -ExecutionPolicy Bypass -File ./scripts/windows/build_nuitka.ps1
   ```
+
+### 📚 在线用户手册更新
+
+若要更新 [在线用户手册](https://jiantongchen.github.io/blink-call/)：
+
+请在 `user_manual/` 目录下编辑`mkdocs.yml`及对应的 `docs/*.md` 文件内容。
+
+本地预览文档可执行：
+
+```bash
+mkdocs serve
+```
+
+启动后访问`http://127.0.0.1:8000/`即可实时查看文档效果。
+
+当准备发布更新时，执行：
+
+```bash
+mkdocs gh-deploy
+```
+
+该命令会自动构建网站，并将其部署到 GitHub Pages。
+
+> [!NOTE]
+> 注意：所有 `mkdocs` 指令均应在 `user_manual` 目录下执行。
 
 ---
 

@@ -30,8 +30,11 @@
 ## ✨ For User
 If you want to get started quickly, begin here:
 
-- 📦 **Latest Release ZIP**: [Download the latest release](https://github.com/JiantongChen/blink-call/releases/latest)
-- 📖 **User Guide**: *To be added*
+- 📦 You can download **the latest version of the software** from:
+  - [GitHub Latest Release](https://github.com/JiantongChen/blink-call/releases/latest)
+  - [Baidu Netdisk](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
+  - [Quark Netdisk](https://pan.quark.cn/s/e96254bb1153)
+- 📖 **User Guide**: [Online User Manual](https://jiantongchen.github.io/blink-call/)
 
 > [!NOTE]
 > Currently, the software is only available for direct download and use on Windows.
@@ -89,6 +92,31 @@ After development is completed, the software can be built with Nuitka for standa
   conda activate blink_call
   powershell -ExecutionPolicy Bypass -File ./scripts/windows/build_nuitka.ps1
   ```
+
+### 📚 Docs Update
+
+To update the [online user manual](https://jiantongchen.github.io/blink-call/):
+
+Please edit the contents of `mkdocs.yml` and the corresponding `docs/*.md` files in the `user_manual/` directory.
+
+To preview the documentation locally, run:
+
+```bash
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000/` to view changes in real time.
+
+When you're ready to publish updates, run:
+
+```bash
+mkdocs gh-deploy
+```
+
+This command will automatically build the site and deploy it to GitHub Pages.
+
+> [!NOTE]
+> Note: All `mkdocs` commands should be executed inside the `user_manual` directory.
 
 ---
 
