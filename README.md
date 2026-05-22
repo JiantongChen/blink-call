@@ -52,7 +52,7 @@ This project includes developer documentation and setup guidance to help you get
   ```
 - Step 2: Setup Conda Environment and Dependencies
 
-  For Linux&&macOS
+  For Linux and macOS
   ```bash
   # default conda environment name -> blink_call
   bash ./scripts/linux/setup_conda.sh [--name <env_name>]

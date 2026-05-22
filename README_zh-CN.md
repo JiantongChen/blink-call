@@ -52,7 +52,7 @@
   ```
 - 步骤二: 安装Python依赖环境
 
-  对于Linux&&macOS系统
+  对于Linux和macOS系统
   ```bash
   # default conda environment name -> blink_call
   bash ./scripts/linux/setup_conda.sh [--name <env_name>]
