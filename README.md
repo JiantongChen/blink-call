@@ -7,7 +7,7 @@
 
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3.10%2B-blue">
-<img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-orange">
+<img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Windows%20%7C%20macOS-orange">
 <img src="https://img.shields.io/badge/Type-GUI-green">
 <img src="https://img.shields.io/badge/Status-Active-success">
 <img src="https://img.shields.io/badge/License-MIT-success">
@@ -52,7 +52,7 @@ This project includes developer documentation and setup guidance to help you get
   ```
 - Step 2: Setup Conda Environment and Dependencies
 
-  For Linux
+  For Linux&&macOS
   ```bash
   # default conda environment name -> blink_call
   bash ./scripts/linux/setup_conda.sh [--name <env_name>]

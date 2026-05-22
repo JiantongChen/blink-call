@@ -15,6 +15,7 @@ class LocalCameraCapture:
         self.latest_frame = None
 
         self._lock = threading.Lock()
+        self._cap_lock = threading.Lock()
         self._thread = None
 
     def start(self):
@@ -33,7 +34,8 @@ class LocalCameraCapture:
             self.camera_found = False
             return False
 
-        self.cap = cap
+        with self._cap_lock:
+            self.cap = cap
         self.camera_found = True
         with self._lock:
             self.latest_frame = frame
@@ -44,8 +46,12 @@ class LocalCameraCapture:
         return True
 
     def _capture_loop(self):
-        while self.running and self.cap is not None:
-            ok, frame = self.cap.read()
+        while self.running:
+            with self._cap_lock:
+                if self.cap is None:
+                    break
+                ok, frame = self.cap.read()
+
             if not ok or frame is None:
                 self.camera_found = False
                 frame = None
@@ -56,9 +62,16 @@ class LocalCameraCapture:
 
     def stop(self):
         self.running = False
-        if self.cap is not None:
-            self.cap.release()
+
+        if self._thread is not None and self._thread is not threading.current_thread():
+            self._thread.join()
+        self._thread = None
+
+        with self._cap_lock:
+            cap = self.cap
             self.cap = None
+        if cap is not None:
+            cap.release()
 
     def read_latest_frame(self):
         with self._lock:
