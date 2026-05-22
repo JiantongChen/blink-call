@@ -1,14 +1,39 @@
 # Quick Start
 
-## First Time Setup
-1. Click the [Settings] button in the top-left corner to open the settings window.
-2. Navigate to [Blink Call]-[Download/Update Model Files], and click the [Download/Update] button. Wait for the model files to complete downloading.
+This page helps you quickly complete one test call. Before using the software for the first time, make sure it has been downloaded and extracted, and that the computer is connected to a camera and speaker.
 
-## Start Making a Call
-1. Keep your face centered in the video frame with an appropriate face size. The most important thing is to clearly show your eye opening and closing state.
-2. Perform the configured blink sequence according to the preset pattern. You can use the progress bar at the top to observe:
-    - Light green represents eyes open
-    - Light yellow represents eyes closed
-    - Dark green represents current blink progress
-3. **Important**: Keep your eyes in the open/closed state until the current stage is complete. Within 3 seconds after completing a stage, start the next stage's eye movement. If you exceed this time, the blink progress will reset.
-4. After triggering, the system enters call alert mode, and your computer will play an alert sound for the configured duration. To stop it early, click the close button at the bottom of the window.
+## Step 1: Open the Software
+
+Open the extracted software folder and double-click `BlinkCall.exe`.
+
+![Main window](images/home-main-window.png)
+
+## Step 2: Download Model Files
+
+Click the [Settings] button in the upper-left corner, go to [Blink Call], and click [Download/Update] under [Download/Update Model Files].
+
+Wait until the model files finish downloading, then save the settings and return to the main screen.
+
+![Download model files](images/quick-start-download-model.gif)
+
+## Step 3: Make Sure the Camera Can See Both Eyes
+
+After returning to the main screen, make sure both of the patient's eyes are visible in the camera view. Both eyes should appear fully in the frame and should not be covered.
+
+## Step 4: Test the Default Blink Sequence
+
+The default blink sequence is:
+
+Eyes open for 2 seconds -> eyes closed for 2 seconds -> eyes open for 2 seconds -> eyes closed for 2 seconds.
+
+Complete the actions in order. During the process, you can watch the progress bar at the top to see the current progress.
+
+![Blink call](images/quick-start-call-alert.gif)
+
+## Step 5: Stop the Call Alert
+
+After the call is triggered, the software will play an alert sound and show the call alert screen.
+
+To stop the alert early, click the stop button on the call alert screen.
+
+![Stop call](images/quick-start-call-alert.png)
