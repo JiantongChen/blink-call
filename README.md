@@ -75,8 +75,8 @@ This project includes developer documentation and setup guidance to help you get
 
 This repository does not handle model training and ONNX model file replacement. Offline training resources for the related models can be found in the following repositories:
 
-- Face Detection: [SCRFD](https://github.com/deepinsight/insightface/tree/master/detection/scrfd)
-- 2D Face 106 Keypoint Detection: [SDUNets](https://github.com/deepinsight/insightface/tree/master/alignment/heatmap)
+- Face Detection: 待补充
+- 2D Face 106 Keypoint Detection: [HRNet](https://github.com/HRNet/HRNet-Facial-Landmark-Detection)
 - Eye State Classification: [ViTA](https://github.com/Ole7755/ViTA)
 
 After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files).
