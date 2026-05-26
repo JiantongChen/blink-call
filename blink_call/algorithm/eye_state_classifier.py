@@ -8,8 +8,6 @@ from PySide6.QtCore import QStandardPaths
 
 from blink_call.utils.helper import Helper
 
-from .inference.utils import create_ort_session
-
 ViTA_ROOT_PATH = (
     Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
     / "blink_call"
@@ -59,7 +57,7 @@ class EyeStateClassifier:
         self.load_error = ""
 
         try:
-            self.session = create_ort_session(str(model_path.resolve()), ctx_id=-1)
+            self.session = Helper.create_ort_session(str(model_path.resolve()), ctx_id=-1)
         except Exception as exc:
             self.load_error = str(exc)
 

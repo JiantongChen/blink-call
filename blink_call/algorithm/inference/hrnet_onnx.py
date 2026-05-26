@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .utils import create_ort_session
+from blink_call.utils.helper import Helper
 
 
 class HRNetONNX:
@@ -33,7 +33,7 @@ class HRNetONNX:
         self.coords_are_normalized = bool(coords_are_normalized)
         self.face_expand_ratio = float(face_expand_ratio)
 
-        self.session = create_ort_session(self.onnx_path, ctx_id)
+        self.session = Helper.create_ort_session(self.onnx_path, ctx_id)
         self.input_name = self.session.get_inputs()[0].name
         self.output_names = [out.name for out in self.session.get_outputs()]
 

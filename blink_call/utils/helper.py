@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import numpy as np
+import onnxruntime as ort
 import yaml
 
 
@@ -142,3 +143,26 @@ class Helper:
         m = (s % 3600) // 60
         sec = s % 60
         return f"{h:02d}:{m:02d}:{sec:02d}"
+
+    @classmethod
+    def create_ort_session(cls, onnx_path, ctx_id=0):
+        def available_providers(ctx_id: int):
+            available = ort.get_available_providers()
+            if ctx_id >= 0 and "CUDAExecutionProvider" in available:
+                return [
+                    ("CUDAExecutionProvider", {"device_id": ctx_id}),
+                    "CPUExecutionProvider",
+                ]
+            return ["CPUExecutionProvider"]
+
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = 1
+        options.inter_op_num_threads = 1
+        options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        return ort.InferenceSession(
+            str(onnx_path),
+            sess_options=options,
+            providers=available_providers(ctx_id),
+        )

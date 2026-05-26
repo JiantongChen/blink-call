@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .utils import create_ort_session
+from blink_call.utils.helper import Helper
 
 
 class RetinaFaceONNX:
@@ -40,7 +40,7 @@ class RetinaFaceONNX:
             8: {"SCALES": (2, 1), "BASE_SIZE": 16, "RATIOS": (1.0,)},
         }
 
-        self.session = create_ort_session(self.onnx_path, ctx_id)
+        self.session = Helper.create_ort_session(self.onnx_path, ctx_id)
         self.input_name = self.session.get_inputs()[0].name
         self.output_names = [o.name for o in self.session.get_outputs()]
 
