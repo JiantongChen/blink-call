@@ -35,7 +35,7 @@ class EyeRegionDetector:
         self.max_num_faces = int(configs.get("max_num_faces", 1))
 
         default_retina_path = APP_MODEL_ROOT / "retinaface" / "retinaface.onnx"
-        default_hrnet_path = APP_MODEL_ROOT / "hrnet" / "hrnet_wflw_98_heatmap_coords_scores.onnx"
+        default_hrnet_path = APP_MODEL_ROOT / "hrnet" / "hrnet.onnx"
 
         self.retina_onnx_path = str(configs.get("retina_onnx_path", default_retina_path))
         self.hrnet_onnx_path = str(configs.get("hrnet_onnx_path", default_hrnet_path))
