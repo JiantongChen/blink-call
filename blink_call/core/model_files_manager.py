@@ -1,10 +1,12 @@
 import shutil
+import tempfile
 import threading
 from enum import Enum
 from pathlib import Path
 
 from modelscope.hub import ProgressCallback
 from modelscope.hub.api import HubApi
+from modelscope.hub.file_download import model_file_download
 from modelscope.hub.snapshot_download import snapshot_download
 from PySide6.QtCore import QObject, QStandardPaths, Signal
 from requests.exceptions import ConnectionError, Timeout
@@ -15,6 +17,8 @@ APP_DATA_LOCAL_PATH = Path(QStandardPaths.writableLocation(QStandardPaths.AppDat
 MODEL_ID = "chenjiantong/blink_call_model_files"
 REPO_NAME = "blink_call_model_files"
 MODEL_INFO_FILE = "model_info.json"
+PROJECT_INFO_FILE = "project_info.json"
+VERSION_FILE = Path(__file__).resolve().parents[2] / "VERSION"
 REQUIRED_MODEL_FILES = (
     ("ViTA", "eye_state_classification.onnx"),
     ("ViTA", "eye_state_classification.json"),
@@ -92,13 +96,40 @@ class ModelFilesManager(QObject):
             local_info = Helper.read_json(self.model_info_file, return_if_not_exists={})
 
             if int(remote_info["LastUpdatedTime"]) > int(local_info["LastUpdatedTime"]):
-                self._emit_status("model_files_status_update_available", "", True)
+                status_key, button_enabled = self._resolve_status_for_software_version()
+                self._emit_status(status_key, "", button_enabled)
             else:
                 self._emit_status("model_files_status_up_to_date", "", False)
         except Exception as exc:
             self._emit_status("model_files_status_request_error", str(exc), False)
         finally:
             self._is_checking = False
+
+    def _resolve_status_for_software_version(self):
+        current_version = VERSION_FILE.read_text(encoding="utf-8").strip()
+
+        with tempfile.TemporaryDirectory(prefix="project_info_", dir=str(APP_DATA_LOCAL_PATH)) as tmp_dir:
+            project_info_path = model_file_download(
+                model_id=MODEL_ID,
+                file_path=PROJECT_INFO_FILE,
+                local_dir=tmp_dir,
+            )
+            project_info = Helper.read_json(Path(project_info_path), return_if_not_exists={})
+
+        min_version = project_info.get("minimum_software_version", "") or "0.0.0"
+        max_version = project_info.get("maximum_software_version", "") or "999.999.999"
+        latest_release_version = project_info.get("latest_release_software_version", "") or "0.0.0"
+
+        if max_version and Helper.compare_versions(current_version, max_version) > 0:
+            return "model_files_status_dev_version_no_model_files", False
+
+        if min_version and Helper.compare_versions(current_version, min_version) < 0:
+            return "model_files_status_software_update_required", False
+
+        if latest_release_version and Helper.compare_versions(current_version, latest_release_version) < 0:
+            return "model_files_status_software_update_available", True
+
+        return "model_files_status_update_available", True
 
     def start_download_or_update(self, timeout_s=10.0):
         if self._is_downloading:

@@ -1,5 +1,6 @@
 import json
 import random
+import re
 import socket
 from copy import deepcopy
 from pathlib import Path
@@ -11,6 +12,24 @@ import yaml
 
 
 class Helper:
+    @classmethod
+    def compare_versions(cls, version_a, version_b):
+        def parse_version(version_str):
+            version_text = str(version_str or "").strip()
+            parts = [int(x) for x in re.findall(r"\d+", version_text)]
+            return tuple(parts) if parts else (0,)
+
+        a = parse_version(version_a)
+        b = parse_version(version_b)
+        max_len = max(len(a), len(b))
+        a += (0,) * (max_len - len(a))
+        b += (0,) * (max_len - len(b))
+        if a < b:
+            return -1
+        if a > b:
+            return 1
+        return 0
+
     @classmethod
     def read_json(cls, path: Path, return_if_not_exists=None):
         if not path.exists():

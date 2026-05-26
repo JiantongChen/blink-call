@@ -83,7 +83,7 @@ After obtaining the corresponding ONNX model files, replace the files in the Mod
 
 > [!WARNING]
 > Updating ONNX files in the ModelScope model repository will directly affect end users. Please do not modify them without caution.  
-> When updating ONNX models, ensure that both file paths and filenames remain exactly the same.
+> When updating ONNX models, ensure that both file paths and filenames remain exactly the same. Also, be sure to check (and update) the contents of the `project_info.json` file in the ModelScope repository.
 
 ### 📦 Building with Nuitka
 After development is completed, the software can be built with Nuitka for standalone distribution. The Nuitka build command is shown below.
