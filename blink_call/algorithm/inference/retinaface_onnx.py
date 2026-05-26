@@ -3,6 +3,7 @@ import numpy as np
 
 from .utils import create_ort_session
 
+
 class RetinaFaceONNX:
     """
     RetinaFace ONNX detector.
@@ -87,9 +88,11 @@ class RetinaFaceONNX:
         shift_y = np.arange(0, feat_h) * stride
         shift_x, shift_y = np.meshgrid(shift_x, shift_y)
 
-        shifts = np.vstack(
-            (shift_x.ravel(), shift_y.ravel(), shift_x.ravel(), shift_y.ravel())
-        ).transpose().astype(np.float32)
+        shifts = (
+            np.vstack((shift_x.ravel(), shift_y.ravel(), shift_x.ravel(), shift_y.ravel()))
+            .transpose()
+            .astype(np.float32)
+        )
 
         a = base_anchors.shape[0]
         k = shifts.shape[0]
@@ -184,7 +187,7 @@ class RetinaFaceONNX:
 
         pad_x = (input_w - new_w) // 2
         pad_y = (input_h - new_h) // 2
-        canvas[pad_y:pad_y + new_h, pad_x:pad_x + new_w] = resized
+        canvas[pad_y : pad_y + new_h, pad_x : pad_x + new_w] = resized
 
         blob = canvas.transpose(2, 0, 1)[None, :, :, :].astype(np.float32)
         meta = {
@@ -249,9 +252,7 @@ class RetinaFaceONNX:
         num_anchors = len(cfg["SCALES"]) * len(cfg["RATIOS"])
 
         if cls_c != 2 * num_anchors:
-            raise RuntimeError(
-                f"stride {stride}: cls channel error, got {cls_c}, expected {2 * num_anchors}"
-            )
+            raise RuntimeError(f"stride {stride}: cls channel error, got {cls_c}, expected {2 * num_anchors}")
 
         base_anchors = self.generate_base_anchors(
             base_size=cfg["BASE_SIZE"],
@@ -266,7 +267,7 @@ class RetinaFaceONNX:
         )
 
         cls_prob = self.softmax_channel(cls, num_anchors) if self.cls_is_score else cls
-        scores = cls_prob[:, num_anchors: 2 * num_anchors, :, :]
+        scores = cls_prob[:, num_anchors : 2 * num_anchors, :, :]
         scores = scores.transpose(0, 2, 3, 1).reshape(-1)
 
         bbox = bbox.reshape(1, num_anchors, 4, feat_h, feat_w)

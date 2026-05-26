@@ -75,7 +75,7 @@ This project includes developer documentation and setup guidance to help you get
 
 This repository does not handle model training and ONNX model file replacement. Offline training resources for the related models can be found in the following repositories:
 
-- Face Detection: 待补充
+- Face Detection: To be supplemented
 - 2D Face 106 Keypoint Detection: [HRNet](https://github.com/HRNet/HRNet-Facial-Landmark-Detection)
 - Eye State Classification: [ViTA](https://github.com/Ole7755/ViTA)
 

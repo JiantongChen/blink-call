@@ -6,33 +6,15 @@ from .utils import create_ort_session
 
 class HRNetONNX:
     """
-   HRNet ONNX landmarker for WFLW-98 facial landmarks.
+    HRNet ONNX landmarker for WFLW-98 facial landmarks.
+    WFLW: https://wywu.github.io/projects/LAB/WFLW.html
 
-   WFLW-98 98点顺序图 (索引分配):
-   ┌─────────────────────────────────────────────────────────────────┐
-   │  0 ─── 1 ─── 2 ─── 3 ─── 4 ─── 5 ─── 6 ─── 7 ─── 8 ─── 9     │
-   │ 10 ── 11 ── 12 ── 13 ── 14 ── 15 ── 16 ── 17 ── 18 ── 19     │
-   │ 20 ── 21 ── 22 ── 23 ── 24 ── 25 ── 26 ── 27 ── 28 ── 29     │
-   │                      (面部轮廓 0-31, 共32点)                     │
-   │                                                                 │
-   │         左眉 30-34          右眉 35-39                         │
-   │                                                                 │
-   │              眼 60-67          眼 68-75                         │
-   │           左眼 8点           右眼 8点                            │
-   │                                                                 │
-   │                   鼻 76-95 (20点)                              │
-   │                                                                 │
-   │              嘴 96-97 (2点)                                    │
-   └─────────────────────────────────────────────────────────────────┘
+    Supported outputs:
+        coords : [1, K, 2] or [K, 2]
+        heatmap: [1, K, H, W]
 
-   注: 本项目使用 60-67 作为左眼区域, 68-75 作为右眼区域
-
-   Supported outputs:
-       coords : [1, K, 2] or [K, 2]
-       heatmap: [1, K, H, W]
-
-   Returned landmarks are mapped back to ORIGINAL image coordinates.
-   """
+    Returned landmarks are mapped back to ORIGINAL image coordinates.
+    """
 
     def __init__(
         self,
@@ -182,8 +164,8 @@ class HRNetONNX:
             coords = coords.astype(np.float32)
 
             if self.coords_are_normalized:
-                coords[:, 0] *= (input_w - 1)
-                coords[:, 1] *= (input_h - 1)
+                coords[:, 0] *= input_w - 1
+                coords[:, 1] *= input_h - 1
 
             if scores is not None:
                 if scores.ndim == 2:
@@ -241,12 +223,7 @@ class HRNetONNX:
 
         blob = self._preprocess(face_crop)
 
-        outputs = self.session.run(
-            self.output_names,
-            {
-                self.input_name: blob
-            }
-        )
+        outputs = self.session.run(self.output_names, {self.input_name: blob})
 
         coords, scores = self._parse_outputs(outputs)
 

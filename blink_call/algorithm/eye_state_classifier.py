@@ -4,10 +4,11 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import onnxruntime as ort
 from PySide6.QtCore import QStandardPaths
 
 from blink_call.utils.helper import Helper
+
+from .inference.utils import create_ort_session
 
 ViTA_ROOT_PATH = (
     Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation))
@@ -54,17 +55,11 @@ class EyeStateClassifier:
 
     def load_model(self):
         model_path = ViTA_ROOT_PATH / "eye_state_classification.onnx"
-        providers = ["CPUExecutionProvider"]
         self.session = None
         self.load_error = ""
 
         try:
-            options = ort.SessionOptions()
-            options.intra_op_num_threads = 1
-            options.inter_op_num_threads = 1
-            options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
-
-            self.session = ort.InferenceSession(str(model_path.resolve()), providers=providers, sess_options=options)
+            self.session = create_ort_session(str(model_path.resolve()), ctx_id=-1)
         except Exception as exc:
             self.load_error = str(exc)
 
