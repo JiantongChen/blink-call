@@ -67,11 +67,11 @@ class ModelFilesManager(QObject):
             api = HubApi(timeout=timeout_s)
             return api.get_model(MODEL_ID), "empty", ""
         except Timeout:
-            return None, "model_files_status_timeout", ""
+            return None, "connection_timed_out", ""
         except ConnectionError:
-            return None, "model_files_status_network_error", ""
+            return None, "network_connection_failed", ""
         except Exception as exc:
-            return None, "model_files_status_request_error", str(exc)
+            return None, "request_model_info_failed", str(exc)
 
     def start_check_status(self, timeout_s=10.0):
         if self._is_checking:
@@ -82,10 +82,10 @@ class ModelFilesManager(QObject):
     def _check_status_worker(self, timeout_s=10.0):
         try:
             self._is_checking = True
-            self._emit_status("model_files_status_checking", "", False)
+            self._emit_status("checking", "", False)
 
             if not self.local_repo_exists() or not self.all_model_files_exists():
-                self._emit_status("model_files_status_missing", "", True)
+                self._emit_status("model_files_not_detected", "", True)
                 return
 
             remote_info, error_key, error_detail = self.get_remote_model_info(timeout_s=timeout_s)
@@ -99,9 +99,9 @@ class ModelFilesManager(QObject):
                 status_key, button_enabled = self._resolve_status_for_software_version()
                 self._emit_status(status_key, "", button_enabled)
             else:
-                self._emit_status("model_files_status_up_to_date", "", False)
+                self._emit_status("up_to_date", "", False)
         except Exception as exc:
-            self._emit_status("model_files_status_request_error", str(exc), False)
+            self._emit_status("request_model_info_failed", str(exc), False)
         finally:
             self._is_checking = False
 
@@ -121,15 +121,15 @@ class ModelFilesManager(QObject):
         latest_release_version = project_info.get("latest_release_software_version", "") or "0.0.0"
 
         if max_version and Helper.compare_versions(current_version, max_version) > 0:
-            return "model_files_status_dev_version_no_model_files", False
+            return "development_version_has_no_model_files", False
 
         if min_version and Helper.compare_versions(current_version, min_version) < 0:
-            return "model_files_status_software_update_required", False
+            return "software_update_required", False
 
         if latest_release_version and Helper.compare_versions(current_version, latest_release_version) < 0:
-            return "model_files_status_software_update_available", True
+            return "software_update_available", True
 
-        return "model_files_status_update_available", True
+        return "update_available", True
 
     def start_download_or_update(self, timeout_s=10.0):
         if self._is_downloading:
@@ -163,7 +163,7 @@ class ModelFilesManager(QObject):
             self.download_finished.emit(True)
         except Exception as exc:
             self.download_finished.emit(False)
-            self._emit_status("model_files_status_download_error", str(exc), True)
+            self._emit_status("download_model_files_failed", str(exc), True)
         finally:
             self._is_downloading = False
 

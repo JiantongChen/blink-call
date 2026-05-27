@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from blink_call.core.model_files_manager import ModelFilesManager
-from blink_call.modules.setting.setting_i18n import SETTING_I18N
+from blink_call.modules.i18n import get_i18n
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.modules.setting.subview import (
     build_blink_call_page,
@@ -363,7 +363,9 @@ class SettingView(QWidget):
 
         pattern = self._normalize_blink_call_pattern(self.vm.get_config("blink_call.pattern"))
         for item in pattern:
-            self._add_blink_call_sequence_row(item["state"], float(item["duration_s"]), emit_change=False)
+            self._add_blink_call_sequence_row(
+                item["state"], float(item["duration_s"]), bool(item["sound_prompt"]), emit_change=False
+            )
 
         self._update_blink_call_sequence_visibility()
 
@@ -384,93 +386,96 @@ class SettingView(QWidget):
         self._apply_language()
 
     def _apply_language(self):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
 
-        self.title_label.setText(i18n["title"])
-        self.general_nav_btn.setText(i18n["general_title"])
-        self.camera_nav_btn.setText(i18n["camera_title"])
-        self.blink_call_nav_btn.setText(i18n["blink_call_title"])
-        self.other_nav_btn.setText(i18n["other_title"])
+        self.title_label.setText(i18n["setting"])
+        self.general_nav_btn.setText(i18n["general"])
+        self.camera_nav_btn.setText(i18n["camera"])
+        self.blink_call_nav_btn.setText(i18n["blink_call"])
+        self.other_nav_btn.setText(i18n["other"])
 
         self.language_label.setText(i18n["language"])
         self.theme_label.setText(i18n["theme"])
-        self.theme_combo.setItemText(0, i18n["theme_light"])
-        self.theme_combo.setItemText(1, i18n["theme_dark"])
+        self.theme_combo.setItemText(0, i18n["light"])
+        self.theme_combo.setItemText(1, i18n["dark"])
 
-        self.choose_camera_source_label.setText(i18n["choose_camera_source_label"])
-        self.camera_local_mode_radio.setText(i18n["camera_local_mode_radio"])
-        self.camera_remote_mode_radio.setText(i18n["camera_remote_mode_radio"])
-        self.local_camera_id_label.setText(i18n["local_camera_id_label"])
-        self.remote_service_info_label.setText(i18n["remote_address_label"])
-        self.remote_ip_label.setText(i18n["ip_label"])
-        self.remote_port_label.setText(i18n["port_label"])
-        self.start_service_btn.setText(i18n["start_service_btn"])
-        self.start_service_label.setText(i18n["service_section_title"])
-        self.service_section_label.setText(i18n["remote_camera_service_config"])
-        self.service_camera_id_label.setText(i18n["local_camera_id_label"])
-        self.service_port_label.setText(i18n["port_label"])
+        self.choose_camera_source_label.setText(i18n["choose_camera_source"])
+        self.camera_local_mode_radio.setText(i18n["local_camera"])
+        self.camera_remote_mode_radio.setText(i18n["remote_camera"])
+        self.local_camera_id_label.setText(i18n["camera_id"])
+        self.remote_service_info_label.setText(i18n["remote_camera_service_info"])
+        self.remote_ip_label.setText(i18n["ip"])
+        self.remote_port_label.setText(i18n["port"])
+        self.start_service_btn.setText(i18n["start_local_camera_service"])
+        self.start_service_label.setText(i18n["start_local_camera_service"])
+        self.service_section_label.setText(i18n["service_configuration_items"])
+        self.service_camera_id_label.setText(i18n["camera_id"])
+        self.service_port_label.setText(i18n["port"])
 
-        self.blink_call_switch_label.setText(i18n["blink_call_enable_label"])
-        self.blink_call_enabled_radio.setText(i18n["blink_call_enabled_radio"])
-        self.blink_call_disabled_radio.setText(i18n["blink_call_disabled_radio"])
-        self.blink_call_progress_label.setText(i18n["blink_call_progress_label"])
-        self.blink_call_progress_show_radio.setText(i18n["blink_call_progress_show_radio"])
-        self.blink_call_progress_hide_radio.setText(i18n["blink_call_progress_hide_radio"])
-        self.blink_call_sequence_label.setText(i18n["blink_call_sequence_label"])
-        self.blink_call_add_sequence_btn.setText(i18n["blink_call_add_step_btn"])
-        self.blink_call_audio_enable_label.setText(i18n["blink_call_audio_enable_label"])
-        self.blink_call_audio_enable_on_radio.setText(i18n["blink_call_audio_enable_on_radio"])
-        self.blink_call_audio_enable_off_radio.setText(i18n["blink_call_audio_enable_off_radio"])
-        self.blink_call_audio_file_label.setText(i18n["blink_call_audio_file_label"])
-        self.blink_call_audio_preview_btn.setText(i18n["blink_call_audio_preview_btn"])
-        self.blink_call_audio_volume_label.setText(i18n["blink_call_audio_volume_label"])
-        self.blink_call_audio_duration_label.setText(i18n["blink_call_audio_duration_label"])
-        self.model_files_label.setText(i18n["model_files_label"])
+        self.blink_call_switch_label.setText(i18n["enable_blink_call"])
+        self.blink_call_enabled_radio.setText(i18n["on"])
+        self.blink_call_disabled_radio.setText(i18n["off"])
+        self.blink_call_progress_label.setText(i18n["show_top_progress_bar_on_home_page"])
+        self.blink_call_progress_show_radio.setText(i18n["show"])
+        self.blink_call_progress_hide_radio.setText(i18n["hide"])
+        self.blink_call_sequence_label.setText(i18n["blink_sequence"])
+        self.blink_call_add_sequence_btn.setText(i18n["add_step"])
+        self.blink_call_audio_enable_label.setText(i18n["play_call_audio"])
+        self.blink_call_audio_enable_on_radio.setText(i18n["on"])
+        self.blink_call_audio_enable_off_radio.setText(i18n["off"])
+        self.blink_call_audio_file_label.setText(i18n["call_audio_file"])
+        self.blink_call_audio_preview_btn.setText(i18n["preview"])
+        self.blink_call_audio_volume_label.setText(i18n["audio_volume"])
+        self.blink_call_audio_duration_label.setText(i18n["audio_play_duration"])
+        self.model_files_label.setText(i18n["download_or_update_model_files"])
         self.model_files_desc_label.setText("")
-        self.model_files_btn.setText(i18n["model_files_btn_download_update"])
+        self.model_files_btn.setText(i18n["download_or_update"])
 
         for idx in range(len(self.blink_call_audio_file_values)):
-            self.blink_call_audio_file_combo.setItemText(idx, f'{i18n["blink_call_audio_option_prefix"]} {idx + 1}')
+            self.blink_call_audio_file_combo.setItemText(idx, f'{i18n["audio"]} {idx + 1}')
 
         duration_keys = [
-            "blink_call_audio_duration_10s",
-            "blink_call_audio_duration_30s",
-            "blink_call_audio_duration_1m",
-            "blink_call_audio_duration_5m",
-            "blink_call_audio_duration_10m",
-            "blink_call_audio_duration_30m",
-            "blink_call_audio_duration_1h",
-            "blink_call_audio_duration_infinite",
+            "ten_seconds",
+            "thirty_seconds",
+            "one_minute",
+            "five_minutes",
+            "ten_minutes",
+            "thirty_minutes",
+            "one_hour",
+            "unlimited",
         ]
         for idx, key in enumerate(duration_keys):
             self.blink_call_audio_duration_combo.setItemText(idx, i18n[key])
 
         for row in self.blink_call_sequence_rows:
-            row["state_combo"].setItemText(0, i18n["blink_call_state_open"])
-            row["state_combo"].setItemText(1, i18n["blink_call_state_closed"])
-            row["duration_label"].setText(i18n["blink_call_duration_label"])
-            row["remove_btn"].setText(i18n["blink_call_remove_step_btn"])
+            row["state_combo"].setItemText(0, i18n["open_eyes"])
+            row["state_combo"].setItemText(1, i18n["close_eyes"])
+            row["duration_label"].setText(i18n["duration_seconds"])
+            row["sound_prompt_label"].setText(i18n["sound_prompt"])
+            row["sound_prompt_combo"].setItemText(0, i18n["no"])
+            row["sound_prompt_combo"].setItemText(1, i18n["yes"])
+            row["remove_btn"].setText(i18n["remove"])
 
-        self.debug_mode_label.setText(i18n["debug_mode_label"])
-        self.recording_label.setText(i18n["recording_title"])
-        self.recording_start_btn.setText(i18n["recording_start_btn"])
-        self.recording_duration_label.setText(i18n["recording_duration_label"])
-        self.recording_duration_unit_label.setText(i18n["recording_duration_unit"])
-        self.recording_path_label.setText(i18n["recording_path_label"])
-        self.recording_path_choose_btn.setText(i18n["recording_path_choose_btn"])
-        self.debug_mode_on_radio.setText(i18n["debug_mode_on_radio"])
-        self.debug_mode_off_radio.setText(i18n["debug_mode_off_radio"])
-        self.debug_log_save_label.setText(i18n["debug_log_save_label"])
-        self.debug_log_save_yes_radio.setText(i18n["debug_log_save_yes_radio"])
-        self.debug_log_save_no_radio.setText(i18n["debug_log_save_no_radio"])
-        self.debug_log_path_label.setText(i18n["debug_log_path_label"])
-        self.debug_log_path_choose_btn.setText(i18n["debug_log_path_choose_btn"])
+        self.debug_mode_label.setText(i18n["debug_mode"])
+        self.recording_label.setText(i18n["record_current_camera_data"])
+        self.recording_start_btn.setText(i18n["start_recording"])
+        self.recording_duration_label.setText(i18n["duration"])
+        self.recording_duration_unit_label.setText(i18n["minute"])
+        self.recording_path_label.setText(i18n["local_folder"])
+        self.recording_path_choose_btn.setText(i18n["choose_folder"])
+        self.debug_mode_on_radio.setText(i18n["on"])
+        self.debug_mode_off_radio.setText(i18n["off"])
+        self.debug_log_save_label.setText(i18n["save_to_local"])
+        self.debug_log_save_yes_radio.setText(i18n["yes"])
+        self.debug_log_save_no_radio.setText(i18n["no"])
+        self.debug_log_path_label.setText(i18n["local_file_path"])
+        self.debug_log_path_choose_btn.setText(i18n["choose_folder"])
 
-        self.reset_config_btn.setText(i18n["reset_config_btn"])
-        self.reset_config_label.setText(i18n["reset_config_btn"])
+        self.reset_config_btn.setText(i18n["restore_defaults"])
+        self.reset_config_label.setText(i18n["restore_defaults"])
 
-        self.save_btn.setText(i18n["save_btn"])
-        self.close_btn.setText(i18n["close_btn"])
+        self.save_btn.setText(i18n["save"])
+        self.close_btn.setText(i18n["close"])
 
     def _normalize_blink_call_pattern(self, pattern):
         normalized = []
@@ -485,12 +490,15 @@ class SettingView(QWidget):
                 duration_s = float(duration_s)
             except (TypeError, ValueError):
                 continue
-            normalized.append({"state": state, "duration_s": duration_s})
+            sound_prompt = item.get("sound_prompt")
+            normalized.append({"state": state, "duration_s": duration_s, "sound_prompt": sound_prompt})
 
         return normalized
 
-    def _add_blink_call_sequence_row(self, state: str = "open", duration_s: float = 1.0, emit_change: bool = True):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+    def _add_blink_call_sequence_row(
+        self, state: str = "open", duration_s: float = 1.0, sound_prompt: bool = True, emit_change: bool = True
+    ):
+        i18n = get_i18n(self.vm.get_config("ui.language"))
 
         row_widget = QWidget()
         row_layout = QHBoxLayout(row_widget)
@@ -498,27 +506,39 @@ class SettingView(QWidget):
         row_layout.setSpacing(8)
 
         state_combo = QComboBox()
-        state_combo.addItem(i18n["blink_call_state_open"], "open")
-        state_combo.addItem(i18n["blink_call_state_closed"], "closed")
+        state_combo.addItem(i18n["open_eyes"], "open")
+        state_combo.addItem(i18n["close_eyes"], "closed")
         idx = state_combo.findData(state)
         state_combo.setCurrentIndex(0 if idx < 0 else idx)
-        state_combo.setFixedSize(140, 40)
+        state_combo.setFixedSize(100, 40)
 
-        duration_label = QLabel(i18n["blink_call_duration_label"])
+        duration_label = QLabel(i18n["duration_seconds"])
         duration_label.setObjectName("settingSubSectionTitle")
         duration_spin = NoWheelSpinBox()
         duration_spin.setDecimals(1)
         duration_spin.setSingleStep(0.5)
         duration_spin.setRange(0.5, 5.0)
         duration_spin.setValue(min(5.0, max(0.5, duration_s)))
+        duration_spin.setFixedSize(100, 40)
 
-        remove_btn = QPushButton(i18n["blink_call_remove_step_btn"])
+        sound_prompt_label = QLabel(i18n["sound_prompt"])
+        sound_prompt_label.setObjectName("settingSubSectionTitle")
+        sound_prompt_combo = QComboBox()
+        sound_prompt_combo.addItem(i18n["no"], False)
+        sound_prompt_combo.addItem(i18n["yes"], True)
+        sound_prompt_idx = sound_prompt_combo.findData(bool(sound_prompt))
+        sound_prompt_combo.setCurrentIndex(0 if sound_prompt_idx < 0 else sound_prompt_idx)
+        sound_prompt_combo.setFixedSize(100, 40)
+
+        remove_btn = QPushButton(i18n["remove"])
         remove_btn.setObjectName("settingNormalButton")
         remove_btn.setFixedSize(160, 30)
 
         row_layout.addWidget(state_combo)
         row_layout.addWidget(duration_label)
         row_layout.addWidget(duration_spin)
+        row_layout.addWidget(sound_prompt_label)
+        row_layout.addWidget(sound_prompt_combo)
         row_layout.addStretch()
         row_layout.addWidget(remove_btn)
 
@@ -527,6 +547,8 @@ class SettingView(QWidget):
             "state_combo": state_combo,
             "duration_label": duration_label,
             "duration_spin": duration_spin,
+            "sound_prompt_label": sound_prompt_label,
+            "sound_prompt_combo": sound_prompt_combo,
             "remove_btn": remove_btn,
         }
         self.blink_call_sequence_rows.append(row)
@@ -534,6 +556,7 @@ class SettingView(QWidget):
 
         state_combo.currentIndexChanged.connect(self._save_blink_call_pattern)
         duration_spin.valueChanged.connect(self._save_blink_call_pattern)
+        sound_prompt_combo.currentIndexChanged.connect(self._save_blink_call_pattern)
         remove_btn.clicked.connect(lambda: self._remove_blink_call_sequence_row(row_widget))
 
         self._refresh_blink_call_remove_buttons()
@@ -570,21 +593,22 @@ class SettingView(QWidget):
                 {
                     "state": row["state_combo"].currentData(),
                     "duration_s": float(row["duration_spin"].value()),
+                    "sound_prompt": bool(row["sound_prompt_combo"].currentData()),
                 }
             )
 
         self.vm.set_config("blink_call.pattern", self._normalize_blink_call_pattern(sequence))
 
     def on_add_blink_call_step(self):
-        self._add_blink_call_sequence_row("open", 1.0, emit_change=True)
+        self._add_blink_call_sequence_row("open", 1.0, True, emit_change=True)
 
     def on_start_service(self):
         self.vm.on_start_local_service()
 
     def on_choose_recording_dir(self):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
         current_dir = self.vm.get_config("recording.local_dir", source="temp") or str(Path.home() / "Desktop")
-        dialog = QFileDialog(self, i18n["recording_choose_dir_title"], current_dir)
+        dialog = QFileDialog(self, i18n["choose_recording_folder"], current_dir)
         dialog.setFileMode(QFileDialog.FileMode.Directory)
         dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
@@ -601,21 +625,21 @@ class SettingView(QWidget):
         self.recording_path_value_label.setText(selected)
 
     def on_restore_default_config(self):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Icon.Question)
-        msg.setWindowTitle(i18n["confirm_reset_title"])
-        msg.setText(i18n["confirm_reset_msg"])
-        confirm_btn = msg.addButton(i18n["confirm_btn"], QMessageBox.ButtonRole.AcceptRole)
-        msg.addButton(i18n["close_btn"], QMessageBox.ButtonRole.RejectRole)
+        msg.setWindowTitle(i18n["restore_defaults"])
+        msg.setText(i18n["are_you_sure_to_restore_default_settings"])
+        confirm_btn = msg.addButton(i18n["confirm"], QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton(i18n["close"], QMessageBox.ButtonRole.RejectRole)
         msg.exec()
         if msg.clickedButton() == confirm_btn:
             self.vm.restore_default_config()
 
     def on_choose_debug_log_dir(self):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
         current_dir = self.vm.get_config("debug_log.local_dir", source="temp") or ""
-        dialog = QFileDialog(self, i18n["debug_log_choose_dir_title"], current_dir)
+        dialog = QFileDialog(self, i18n["choose_local_log_folder"], current_dir)
         dialog.setFileMode(QFileDialog.FileMode.Directory)
         dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
         dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
@@ -647,7 +671,7 @@ class SettingView(QWidget):
         self._preview_sound.play()
 
     def on_model_files_status_changed(self, payload=None):
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
         desc_text = f"{i18n.get(payload['desc_key'], '')} {payload['reason_detail']}"
 
         self.model_files_desc_label.setText(desc_text)
@@ -655,10 +679,10 @@ class SettingView(QWidget):
 
     def on_model_files_download_started(self):
         self.model_files_btn.setEnabled(False)
-        i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
+        i18n = get_i18n(self.vm.get_config("ui.language"))
 
         self.model_files_block_overlay.setGeometry(0, 0, self.width(), self.height())
-        self.model_files_block_overlay.show_progress(i18n.get("model_files_status_downloading", ""), determinate=True)
+        self.model_files_block_overlay.show_progress(i18n.get("downloading", ""), determinate=True)
         self.model_files_block_overlay.set_progress(0)
         self.model_files_block_overlay.show()
         self.model_files_block_overlay.raise_()
@@ -669,8 +693,8 @@ class SettingView(QWidget):
 
         self.model_files_block_overlay.set_progress(value)
         if filename:
-            i18n = SETTING_I18N.get(self.vm.get_config("ui.language"), SETTING_I18N["zh"])
-            self.model_files_block_overlay.set_title(f'{i18n["model_files_status_downloading"]}\n{filename}')
+            i18n = get_i18n(self.vm.get_config("ui.language"))
+            self.model_files_block_overlay.set_title(f'{i18n["downloading"]}\n{filename}')
 
     def on_model_files_download_finished(self, success: bool):
         self.model_files_block_overlay.hide()

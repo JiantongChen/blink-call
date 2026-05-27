@@ -122,11 +122,12 @@ class InferenceWorker(QThread):
 
         eye_state = cls_result.get("state")
         confidence = cls_result.get("confidence")
-        progress_ratio, blinck_call_flag = self.update_forward_progress(eye_state)
+        progress_ratio, blinck_call_flag, stage_sound_prompt_flag = self.update_forward_progress(eye_state)
 
         return {
             "timestamp_ms": int(time.time() * 1000),
             "blinck_call_flag": bool(blinck_call_flag),
+            "stage_sound_prompt_flag": bool(stage_sound_prompt_flag),
             "blink_progress_ratio": float(progress_ratio),
             "debug_eye_bbox_xyxy": self.latest_eye_bbox,
             "debug_face_bbox_xyxy": self.latest_face_bbox,
@@ -169,6 +170,7 @@ class InferenceWorker(QThread):
         now = time.perf_counter()
         dt = 0.0 if self.last_progress_update_s is None else min(now - self.last_progress_update_s, 0.5)
         self.last_progress_update_s = now
+        stage_sound_prompt_flag = False
 
         if self.in_transition_buffer:
             self.transition_elapsed_s += dt
@@ -193,6 +195,8 @@ class InferenceWorker(QThread):
                 self.reset_progress_state()
 
             if self.progress_in_step_s >= rule_duration:
+                if bool(rule.get("sound_prompt")):
+                    stage_sound_prompt_flag = True
                 self.progress_step_idx += 1
 
                 overflow = self.progress_in_step_s - rule_duration
@@ -216,7 +220,7 @@ class InferenceWorker(QThread):
             self.last_match_time = now
             self.reset_progress_state()
 
-        return ratio, blink
+        return ratio, blink, stage_sound_prompt_flag
 
     def current_progress_ratio(self, pattern):
         if self.progress_step_idx >= len(pattern):

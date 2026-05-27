@@ -16,27 +16,13 @@ from PySide6.QtWidgets import (
 
 from blink_call.core.navigation import Navigation
 from blink_call.modules.home.home_viewmodel import HomeViewModel
+from blink_call.modules.i18n import get_i18n
 from blink_call.modules.setting.setting_view import SettingView
 from blink_call.utils.helper import Helper
 from blink_call.widget import BlinkPatternProgressBar, InteractionBlockOverlay
 
 
 class HomeView(QWidget):
-    TEXTS = {
-        "zh": {
-            "settings": "设置",
-            "exit": "退出",
-            "calling_btn": "正在呼叫中...\n点击此按钮关闭",
-            "recording_stop": "点击此处提前终止数据录制",
-        },
-        "en": {
-            "settings": "Settings",
-            "exit": "Exit",
-            "calling_btn": "Calling...\nTap to stop",
-            "recording_stop": "Click here to terminate data recording in advance",
-        },
-    }
-
     is_setting_popup = Signal(bool)
 
     def __init__(self, vm: HomeViewModel, nav: Navigation):
@@ -46,7 +32,7 @@ class HomeView(QWidget):
 
         self.setObjectName("homeView")
 
-        i18n = self.TEXTS.get(self.vm.setting_vm.get_config("ui.language"), self.TEXTS["zh"])
+        i18n = get_i18n(self.vm.setting_vm.get_config("ui.language"))
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -59,7 +45,7 @@ class HomeView(QWidget):
 
         self.blink_progress_bar = BlinkPatternProgressBar(self)
 
-        self.setting_btn = QPushButton(i18n["settings"], self)
+        self.setting_btn = QPushButton(i18n["setting"], self)
         self.setting_btn.setObjectName("homeSettingBtn")
         self.setting_btn.setFixedSize(100, 40)
         self.setting_btn.move(20, 20)
@@ -139,10 +125,10 @@ class HomeView(QWidget):
         self.on_apply_language(self.vm.setting_vm.get_config("ui.language"))
 
     def on_apply_language(self, language):
-        i18n = self.TEXTS.get(language, self.TEXTS["zh"])
-        self.setting_btn.setText(i18n["settings"])
+        i18n = get_i18n(language)
+        self.setting_btn.setText(i18n["setting"])
         self.exit_btn.setText(i18n["exit"])
-        self.call_close_btn.setText(i18n["calling_btn"])
+        self.call_close_btn.setText(i18n["calling"])
 
     def on_open_setting_popup(self):
         self.setting_btn.setVisible(False)
@@ -234,10 +220,10 @@ class HomeView(QWidget):
         if active:
             self.blink_progress_bar.setVisible(False)
 
-        i18n = self.TEXTS.get(self.vm.setting_vm.get_config("ui.language"), self.TEXTS["zh"])
+        i18n = get_i18n(self.vm.setting_vm.get_config("ui.language"))
         total_text = Helper.format_hms(int(data.get("total_s") or 0))
         elapsed_text = Helper.format_hms(int(data.get("elapsed_s") or 0))
-        self.recording_stop_btn.setText(f"{elapsed_text} / {total_text}\n{i18n['recording_stop']}")
+        self.recording_stop_btn.setText(f"{elapsed_text} / {total_text}\n{i18n['stop_recording']}")
         self._position_recording_stop_btn()
 
     def resizeEvent(self, event):

@@ -10,7 +10,7 @@ from PySide6.QtMultimedia import QSoundEffect
 from blink_call.core.inference_worker import InferenceWorker
 from blink_call.core.model_files_manager import ModelFilesManager
 from blink_call.modules.home.home_model import HomeModel
-from blink_call.modules.setting.setting_i18n import SETTING_I18N
+from blink_call.modules.i18n import get_i18n
 from blink_call.modules.setting.setting_model import SettingModel
 from blink_call.modules.setting.setting_viewmodel import SettingViewModel
 from blink_call.utils.debug_overlay import draw_debug
@@ -28,23 +28,6 @@ class HomeViewModel(QObject):
     debug_mode_state = Signal(bool)
     show_debug_msg = Signal(str)
     clear_debug_msg = Signal()
-
-    STATUS_TEXTS = {
-        "zh": {
-            "local_invalid_camera": "摄像头不可用。\n如果确定此电脑存在可用摄像头，请在设置中配置。",
-            "remote_error": "远程连接摄像头不可用(状态码: {status_code})。",
-            "unknown_error": "发生未知错误。",
-            "service_started_faild": "本地摄像头服务启动失败，请确认摄像头可用。",
-            "service_started_success": "服务已启动，请在其他设备选择“远程摄像头”。\n地址: {ip}\n端口: {port}",
-        },
-        "en": {
-            "local_invalid_camera": "Camera is not available.\nIf a camera exists on this device, please configure it in Settings.",
-            "remote_error": "Remote camera is unavailable (status code: {status_code}).",
-            "unknown_error": "An unknown error occurred.",
-            "service_started_faild": "Failed to start local camera service. Please make sure the camera is available.",
-            "service_started_success": 'Service started. On another device, choose "Remote Camera".\nIP: {ip}\nPort: {port}',
-        },
-    }
 
     def __init__(self, model: HomeModel):
         super().__init__()
@@ -67,6 +50,11 @@ class HomeViewModel(QObject):
 
         self.call_sound_effect = QSoundEffect(self)
         self.call_sound_effect.setLoopCount(int(QSoundEffect.Loop.Infinite.value))
+        self.step_prompt_sound_effect = QSoundEffect(self)
+        self.step_prompt_sound_effect.setLoopCount(1)
+        self.step_prompt_sound_effect.setSource(
+            QUrl.fromLocalFile(str((Path("assets") / "audio" / "prompt.wav").resolve()))
+        )
         self.call_sound_stop_timer = QTimer(self)
         self.call_sound_stop_timer.setSingleShot(True)
         self.call_sound_stop_timer.timeout.connect(self.stop_call_audio)
@@ -91,8 +79,8 @@ class HomeViewModel(QObject):
         self.recording_target_fps = 30.0
 
     def emit_show_camera_status(self, key, **params):
-        _t = self.STATUS_TEXTS.get(self.setting_vm.get_config("ui.language"), self.STATUS_TEXTS["zh"])[key]
-        self.show_camera_status.emit(_t.format(**params))
+        text = get_i18n(self.setting_vm.get_config("ui.language"))[key]
+        self.show_camera_status.emit(text.format(**params))
 
     def on_page_enter(self):
         self._initialize_vars()
@@ -185,7 +173,7 @@ class HomeViewModel(QObject):
         if ok:
             self.emit_show_camera_status("service_started_success", ip=ip, port=port)
         else:
-            self.emit_show_camera_status("service_started_faild")
+            self.emit_show_camera_status("service_started_failed")
 
     def on_infer_result(self, result):
         self.latest_infer_result = result
@@ -199,6 +187,8 @@ class HomeViewModel(QObject):
         )
         if bool(result.get("blinck_call_flag")):
             self.start_or_reset_call_audio()
+        if bool(result.get("stage_sound_prompt_flag")):
+            self.play_stage_prompt_sound()
 
     def on_infer_debug(self, text: str):
         if self.debug_mode:
@@ -212,8 +202,8 @@ class HomeViewModel(QObject):
             return
 
         if not self.model_files_manager.all_model_files_exists():
-            i18n = SETTING_I18N.get(self.setting_vm.get_config("ui.language"), SETTING_I18N["zh"])
-            self.model_files_hint.emit({"visible": True, "text": i18n["home_model_files_missing_hint"]})
+            i18n = get_i18n(self.setting_vm.get_config("ui.language"))
+            self.model_files_hint.emit({"visible": True, "text": i18n["model_files_missing_hint"]})
             return
 
         if not self.infer_worker.isRunning():
@@ -267,6 +257,16 @@ class HomeViewModel(QObject):
             self.is_call_audio_playing = False
             self.blink_call_alert_visibility.emit(False)
 
+    def play_stage_prompt_sound(self):
+        if self.setting_popup or not bool(self.setting_vm.get_config("blink_call.enabled")):
+            return
+
+        volume = int(self.setting_vm.get_config("blink_call.audio.volume"))
+        volume = max(0, min(100, volume))
+        self.step_prompt_sound_effect.setVolume(float(volume) / 100.0)
+        self.step_prompt_sound_effect.stop()
+        self.step_prompt_sound_effect.play()
+
     def start_recording(self):
         self.is_recording_mode = True
 
@@ -281,8 +281,7 @@ class HomeViewModel(QObject):
         self.stop_infer_worker()
         self.start_local_camera()
 
-        language = self.setting_vm.get_config("ui.language")
-        folder_name = "眨眼呼叫数据" if language == "zh" else "blink_call_data"
+        folder_name = get_i18n(self.setting_vm.get_config("ui.language"))["blink_call_data_folder"]
         root_dir = self.setting_vm.get_config("recording.local_dir")
         output_dir = Path(root_dir) / folder_name
         output_dir.mkdir(parents=True, exist_ok=True)
