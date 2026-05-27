@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
   <img width="100" height="100" src="assets/icons/eye.png" alt="Blink Call icon"/>
   <h1><strong>Blink Call</strong></h1>
   <h3><em>A blink-based calling system for ALS patients, detecting custom blink patterns to trigger hands-free calls.</em></h3>
@@ -75,8 +75,8 @@ This project includes developer documentation and setup guidance to help you get
 
 This repository does not handle model training and ONNX model file replacement. Offline training resources for the related models can be found in the following repositories:
 
-- Face Detection: To be supplemented
-- 2D Face 106 Keypoint Detection: [HRNet](https://github.com/HRNet/HRNet-Facial-Landmark-Detection)
+- Face Detection: [Retinaface](https://github.com/xxlin123/Retinaface)
+- 2D Face 98 Keypoint Detection: [HRNet](https://github.com/xxlin123/HRNet)
 - Eye State Classification: [ViTA](https://github.com/Ole7755/ViTA)
 
 After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files).
