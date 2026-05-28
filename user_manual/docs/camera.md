@@ -22,7 +22,7 @@
 - 如果画面没有显示，可以依次尝试 1、2、3。
 - 每次修改后保存设置，并回到主界面查看画面是否正常。
 
-![选择摄像头](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/camera-settings.jpg)
+![选择摄像头](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/camera-settings.jpg)
 
 ## 画面要求
 

@@ -6,7 +6,7 @@
 
 每天使用前，先双击 `BlinkCall.exe` 打开软件，确认主界面显示摄像头画面。
 
-![软件主界面](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/home-main-window.jpg)
+![软件主界面](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/home-main-window.jpg)
 
 ## 确认双眼清晰可见
 
@@ -32,7 +32,7 @@
 
 在每个阶段中，需要保持当前睁眼或闭眼状态，直到该阶段完成。完成一个阶段后，请在 3 秒内开始下一个阶段，否则进度会清零。
 
-![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.gif)
+![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.gif)
 
 ## 停止呼叫提醒
 
@@ -40,4 +40,4 @@
 
 如果需要提前停止，请点击呼叫提醒界面上的停止按钮。
 
-![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.jpg)
+![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.jpg)

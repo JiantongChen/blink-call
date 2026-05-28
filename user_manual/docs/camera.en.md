@@ -22,7 +22,7 @@ Suggestions:
 - If no image appears, try 1, 2, and 3 in order.
 - After each change, save the settings and return to the main screen to check whether the camera view is working.
 
-![Select camera](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/camera-settings.jpg)
+![Select camera](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/camera-settings.jpg)
 
 ## Camera View Requirements
 

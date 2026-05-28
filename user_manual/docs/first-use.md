@@ -8,17 +8,17 @@
 
 建议不要直接在压缩包内运行软件，先完成解压后再打开。
 
-![zip](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/zip.jpg)
+![zip](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/zip.jpg)
 
 ## 打开软件
 
 进入解压后的软件文件夹，双击 `BlinkCall.exe` 打开软件。
 
-![app](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/app.jpg)
+![app](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/app.jpg)
 
 软件打开后，主界面会显示摄像头画面和顶部眨眼进度条。
 
-![软件主界面](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/home-main-window.jpg)
+![软件主界面](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/home-main-window.jpg)
 
 ## 下载/更新模型文件
 
@@ -30,7 +30,7 @@
 
 点击【下载/更新】后等待下载完成。下载完成后，保存设置并返回主界面。
 
-![下载模型文件](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-download-model.gif)
+![下载模型文件](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-download-model.gif)
 
 ## 允许摄像头权限
 
@@ -38,7 +38,7 @@
 
 如果没有弹窗，可以直接继续下一步。
 
-![authority](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/authority.jpg)
+![authority](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/authority.jpg)
 
 ## 选择摄像头
 
@@ -46,7 +46,7 @@
 
 如果电脑连接了多个摄像头，可以在设置中调整摄像头编号。
 
-![选择摄像头](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/camera-settings.jpg)
+![选择摄像头](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/camera-settings.jpg)
 
 ## 调整病人与摄像头的位置
 
@@ -63,8 +63,8 @@
 
 测试过程中可以观察顶部进度条，进度条会显示当前动作的完成情况。
 
-![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.gif)
+![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.gif)
 
 如果需要提前停止提醒，请点击呼叫提醒界面上的停止按钮。
 
-![停止呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.jpg)
+![停止呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.jpg)

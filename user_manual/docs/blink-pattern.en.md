@@ -8,7 +8,7 @@ A blink sequence is a series of eye-open and eye-closed actions.
 
 The software recognizes the actions in the configured order. After all actions are completed, it triggers the call alert.
 
-![Blink call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.gif)
+![Blink call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.gif)
 
 ## Default Blink Sequence
 
@@ -26,7 +26,7 @@ Settings -> Blink Call -> Blink Sequence.
 
 You can change the action type and duration of each step.
 
-![Modify blink sequence](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/blink-pattern-settings.jpg)
+![Modify blink sequence](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/blink-pattern-settings.jpg)
 
 ## Add or Remove Action Steps
 
@@ -34,7 +34,7 @@ Click [Add Step] to add a new eye-open or eye-closed action.
 
 If the sequence has multiple steps, you can delete steps that are not needed.
 
-![Add or remove actions](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/blink-pattern-settings.gif)
+![Add or remove actions](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/blink-pattern-settings.gif)
 
 ## Choose a Suitable Duration
 
