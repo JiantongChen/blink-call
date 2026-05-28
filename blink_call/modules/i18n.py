@@ -1,6 +1,8 @@
 I18N = {
     "zh": {
         "empty": "",
+        "user_manual": "用户手册",
+        "user_manual_with_update": "检测到更新，请从用户手册处下载最新软件",
         "setting": "设置",
         "general": "常规",
         "blink_call": "眨眼呼叫",
@@ -75,8 +77,7 @@ I18N = {
         "up_to_date": "无需更新。",
         "update_available": "可更新。",
         "development_version_has_no_model_files": "当前处于开发版本，无可用模型文件。",
-        "software_update_required": "请更新软件: https://jiantongchen.github.io/blink-call/",
-        "software_update_available": "可更新软件: https://jiantongchen.github.io/blink-call/",
+        "software_update_required": "请前往用户手册更新软件",
         "checking": "检测中...",
         "downloading": "正在下载模型文件...",
         "model_files_missing_hint": "未检测到可用的模型的文件，请在【设置】-【眨眼呼叫】-【下载/更新模型文件】处下载。",
@@ -92,6 +93,8 @@ I18N = {
     },
     "en": {
         "empty": "",
+        "user_manual": "User Manual",
+        "user_manual_with_update": "New version available, please download from the user manual.",
         "setting": "Settings",
         "general": "General",
         "blink_call": "Blink Call",
@@ -166,8 +169,7 @@ I18N = {
         "up_to_date": "No update required.",
         "update_available": "Update available.",
         "development_version_has_no_model_files": "Current development version detected. No model files available.",
-        "software_update_required": "Please update the software: https://jiantongchen.github.io/blink-call/",
-        "software_update_available": "A newer software version is available: https://jiantongchen.github.io/blink-call/",
+        "software_update_required": "Please go to the user manual to update the software.",
         "checking": "Checking...",
         "downloading": "Downloading model files...",
         "model_files_missing_hint": "No usable model files detected. Please go to [Settings] - [Blink Call] - [Download/Update model files] and download.",

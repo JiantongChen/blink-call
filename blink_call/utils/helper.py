@@ -14,10 +14,16 @@ import yaml
 class Helper:
     @classmethod
     def compare_versions(cls, version_a, version_b):
+        def is_valid_version(version):
+            return bool(re.fullmatch(r"\d+\.\d+\.\d+", version))
+
         def parse_version(version_str):
             version_text = str(version_str or "").strip()
             parts = [int(x) for x in re.findall(r"\d+", version_text)]
             return tuple(parts) if parts else (0,)
+
+        if not is_valid_version(version_a) or not is_valid_version(version_b):
+            return 0
 
         a = parse_version(version_a)
         b = parse_version(version_b)

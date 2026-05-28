@@ -79,7 +79,7 @@ This repository does not handle model training and ONNX model file replacement. 
 - 2D Face 98 Keypoint Detection: [HRNet](https://github.com/xxlin123/HRNet)
 - Eye State Classification: [ViTA](https://github.com/Ole7755/ViTA)
 
-After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files).
+After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/BlinkCall/blink_call_model_files/files).
 
 > [!WARNING]
 > Updating ONNX files in the ModelScope model repository will directly affect end users. Please do not modify them without caution.  

@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QStackedWidget,
     QVBoxLayout,
@@ -16,6 +17,8 @@ from blink_call.widget import HDividerLine
 
 @dataclass
 class GeneralPageWidgets:
+    user_manual_label: QLabel
+    user_manual_btn: QPushButton
     language_label: QLabel
     language_combo: QComboBox
     theme_label: QLabel
@@ -40,6 +43,21 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     general_layout.setContentsMargins(16, 16, 16, 16)
     general_layout.setSpacing(16)
 
+    user_manual_row = QHBoxLayout()
+    user_manual_row.setSpacing(16)
+    user_manual_label = QLabel("User Manual")
+    user_manual_label.setObjectName("settingSubSectionTitle")
+    user_manual_btn = QPushButton("User Manual")
+    user_manual_btn.setObjectName("settingUserManualBtn")
+    user_manual_btn.setFixedSize(220, 36)
+
+    user_manual_row.addWidget(user_manual_label)
+    user_manual_row.addStretch()
+    user_manual_row.addWidget(user_manual_btn)
+    general_layout.addLayout(user_manual_row)
+
+    general_layout.addWidget(HDividerLine())
+
     language_row = QHBoxLayout()
     language_row.setSpacing(16)
     language_label = QLabel("Language")
@@ -53,6 +71,8 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     language_row.addStretch()
     language_row.addWidget(language_combo)
     general_layout.addLayout(language_row)
+
+    general_layout.addWidget(HDividerLine())
 
     theme_row = QHBoxLayout()
     theme_row.setSpacing(16)
@@ -72,6 +92,8 @@ def build_general_page(content_stack: QStackedWidget) -> GeneralPageWidgets:
     general_layout.addStretch()
 
     return GeneralPageWidgets(
+        user_manual_label=user_manual_label,
+        user_manual_btn=user_manual_btn,
         language_label=language_label,
         language_combo=language_combo,
         theme_label=theme_label,

@@ -14,7 +14,7 @@ from requests.exceptions import ConnectionError, Timeout
 from blink_call.utils.helper import Helper
 
 APP_DATA_LOCAL_PATH = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "blink_call"
-MODEL_ID = "chenjiantong/blink_call_model_files"
+MODEL_ID = "BlinkCall/blink_call_model_files"
 REPO_NAME = "blink_call_model_files"
 MODEL_INFO_FILE = "model_info.json"
 PROJECT_INFO_FILE = "project_info.json"
@@ -22,8 +22,8 @@ VERSION_FILE = Path(__file__).resolve().parents[2] / "VERSION"
 REQUIRED_MODEL_FILES = (
     ("ViTA", "eye_state_classification.onnx"),
     ("ViTA", "eye_state_classification.json"),
-    ("insightface", "models", "buffalo_s_sft", "2d106det.onnx"),
-    ("insightface", "models", "buffalo_s_sft", "det_500m.onnx"),
+    ("hrnet", "hrnet.onnx"),
+    ("retinaface", "retinaface.onnx"),
 )
 
 
@@ -118,16 +118,12 @@ class ModelFilesManager(QObject):
 
         min_version = project_info.get("minimum_software_version", "") or "0.0.0"
         max_version = project_info.get("maximum_software_version", "") or "999.999.999"
-        latest_release_version = project_info.get("latest_release_software_version", "") or "0.0.0"
 
         if max_version and Helper.compare_versions(current_version, max_version) > 0:
             return "development_version_has_no_model_files", False
 
         if min_version and Helper.compare_versions(current_version, min_version) < 0:
             return "software_update_required", False
-
-        if latest_release_version and Helper.compare_versions(current_version, latest_release_version) < 0:
-            return "software_update_available", True
 
         return "update_available", True
 

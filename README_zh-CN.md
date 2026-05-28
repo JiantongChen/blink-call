@@ -79,7 +79,7 @@
 - 2D 人脸 98 关键点检测：[HRNet](https://github.com/xxlin123/HRNet)
 - 眼睛状态分类：[ViTA](https://github.com/Ole7755/ViTA)
 
-获取对应 ONNX 模型文件后，请替换该 ModelScope [模型库](https://www.modelscope.cn/models/chenjiantong/blink_call_model_files/files)中的文件。
+获取对应 ONNX 模型文件后，请替换该 ModelScope [模型库](https://www.modelscope.cn/models/BlinkCall/blink_call_model_files/files)中的文件。
 
 > [!WARNING]
 > 更新 ModelScope 模型仓库中的 ONNX 文件会直接影响所有用户，请谨慎修改。  

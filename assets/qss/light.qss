@@ -224,6 +224,7 @@ QRadioButton::indicator:checked {
 QPushButton#settingSaveBtn,
 QPushButton#settingCloseBtn,
 QPushButton#settingResetBtn,
+QPushButton#settingUserManualBtn,
 QPushButton#settingStartServiceBtn,
 QPushButton#settingStartRecordingBtn,
 QPushButton#settingModelFilesBtn {
@@ -262,6 +263,7 @@ QPushButton#settingCloseBtn:pressed {
     color: #f9fafb;
 }
 
+QPushButton#settingUserManualBtn,
 QPushButton#settingStartServiceBtn,
 QPushButton#settingStartRecordingBtn,
 QPushButton#settingModelFilesBtn {
@@ -269,12 +271,14 @@ QPushButton#settingModelFilesBtn {
     color: #ffffff;
 }
 
+QPushButton#settingUserManualBtn:hover,
 QPushButton#settingStartServiceBtn:hover,
 QPushButton#settingStartRecordingBtn:hover,
 QPushButton#settingModelFilesBtn:hover {
     background: #d97706;
 }
 
+QPushButton#settingUserManualBtn:pressed,
 QPushButton#settingStartServiceBtn:pressed,
 QPushButton#settingStartRecordingBtn:pressed,
 QPushButton#settingModelFilesBtn:pressed {

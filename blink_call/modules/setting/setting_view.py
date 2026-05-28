@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -215,7 +215,9 @@ class SettingView(QWidget):
         self.recording_start_btn.clicked.connect(self.vm.start_recording)
         self.recording_path_choose_btn.clicked.connect(self.on_choose_recording_dir)
         self.debug_log_path_choose_btn.clicked.connect(self.on_choose_debug_log_dir)
+        self.user_manual_btn.clicked.connect(self.on_open_user_manual)
         self.vm.close_requested.connect(self.hide)
+        self.vm.manual_link_text_changed.connect(self.on_manual_link_text_changed)
         self.model_files_manager.status_changed.connect(self.on_model_files_status_changed)
         self.model_files_manager.download_started.connect(self.on_model_files_download_started)
         self.model_files_manager.download_progress.connect(self.on_model_files_download_progress)
@@ -389,6 +391,8 @@ class SettingView(QWidget):
         i18n = get_i18n(self.vm.get_config("ui.language"))
 
         self.title_label.setText(i18n["setting"])
+        self.on_manual_link_text_changed("user_manual")
+        self.user_manual_btn.setText(i18n["user_manual"])
         self.general_nav_btn.setText(i18n["general"])
         self.camera_nav_btn.setText(i18n["camera"])
         self.blink_call_nav_btn.setText(i18n["blink_call"])
@@ -704,6 +708,13 @@ class SettingView(QWidget):
         else:
             self.model_files_btn.setEnabled(True)
 
+    def on_manual_link_text_changed(self, key: str):
+        i18n = get_i18n(self.vm.get_config("ui.language"))
+        self.user_manual_label.setText(str(i18n.get(key, i18n.get("user_manual", ""))))
+
+    def on_open_user_manual(self):
+        QDesktopServices.openUrl(QUrl("https://jiantongchen.github.io/blink-call/"))
+
     def _update_blink_call_audio_volume_text(self, value: int):
         self.blink_call_audio_volume_value_label.setText(f"{int(value)}%")
 
@@ -744,6 +755,7 @@ class SettingView(QWidget):
 
     def showEvent(self, event):
         self.refresh_from_local_config()
+        self.vm.check_manual_update()
         super().showEvent(event)
 
     def resizeEvent(self, event):
