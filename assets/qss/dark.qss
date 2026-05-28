@@ -202,12 +202,16 @@ QFrame#settingItemDivider {
 }
 
 
-QComboBox,
+QComboBox {
+    background: #353535;
+    color: #f3f4f6;
+    padding: 0 8px;
+}
+
 QLineEdit,
 NoWheelSpinBox {
     background: #353535;
     color: #f3f4f6;
-    padding: 0 8px;
 }
 
 QRadioButton {
