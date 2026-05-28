@@ -6,7 +6,7 @@ After the first-time setup is complete, daily use only requires opening the soft
 
 Before each use, double-click `BlinkCall.exe` and confirm that the main screen shows the camera view.
 
-![Main window](images/home-main-window.png)
+![Main window](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/home-main-window.jpg)
 
 ## Make Sure Both Eyes Are Clearly Visible
 
@@ -30,7 +30,7 @@ The progress bar at the top shows the completion status of the current blink act
 
 During each stage, keep the current eye-open or eye-closed state until that stage is complete. After finishing one stage, start the next stage within 3 seconds, or the progress will reset.
 
-![Blink call](images/quick-start-call-alert.gif)
+![Blink call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.gif)
 
 ## Stop the Call Alert
 
@@ -38,4 +38,4 @@ After the call is triggered, the software will play an alert sound and show the 
 
 To stop it early, click the stop button on the call alert screen.
 
-![Blink call](images/quick-start-call-alert.png)
+![Blink call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.jpg)

@@ -19,7 +19,7 @@
 可以在【呼叫音频文件】中选择不同铃声。
 
 ## 眨眼序列步骤提示音
-![提示音](images/blink_sound.gif)
+![提示音](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/blink_sound.gif)
 在【眨眼序列】中，每个动作步骤都可以设置【声音提醒】。
 
 开启后，当病人完成当前睁眼或闭眼动作步骤时，软件会播放一次短提示音，提示病人当前步骤已经完成，可以继续进行下一个动作。
@@ -44,4 +44,4 @@
 
 如果希望提醒一直持续，直到家属手动停止，可以选择【无限长】。
 
-![设置播放时长](images/audio-alert-settings.png)
+![设置播放时长](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/audio-alert-settings.jpg)

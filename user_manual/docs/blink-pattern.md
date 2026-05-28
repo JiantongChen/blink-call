@@ -8,7 +8,7 @@
 
 软件会按照设置的顺序识别动作，全部完成后触发呼叫提醒。
 
-![眨眼呼叫](images/quick-start-call-alert.gif)
+![眨眼呼叫](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/quick-start-call-alert.gif)
 
 ## 默认眨眼序列
 
@@ -26,7 +26,7 @@
 
 可以修改每一步的动作类型和持续时间。
 
-![修改眨眼序列](images/blink-pattern-settings.png)
+![修改眨眼序列](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/blink-pattern-settings.jpg)
 
 ## 添加或删除动作步骤
 
@@ -34,7 +34,7 @@
 
 如果序列中有多个步骤，可以删除不需要的步骤。
 
-![添加或删除动作](images/blink-pattern-settings.gif)
+![添加或删除动作](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call/user_manual/docs/images/blink-pattern-settings.gif)
 
 ## 选择合适的持续时间
 
