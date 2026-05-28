@@ -16,7 +16,7 @@
 - An internet connection, required when downloading model files for the first time.
 - Computer speakers or a Bluetooth speaker.
 
-## Download Software
+## Download Software (Latest Version: v{{ blink_call_version }})
 
 Choose any one of the following download options:
 
@@ -28,8 +28,7 @@ Download the latest software package, extract it to any folder, and double-click
 
 ## Start Here
 
-- If you are trying the software for the first time, read [Quick Start](quick-start.md).
-- If you need to complete the full first-time setup, read [First Use](first-use.md).
+- If you are using the software for the first time, read [First Use](first-use.md).
 - If you need to adjust the call gesture, read [Blink Pattern](blink-pattern.md).
 - If you need to adjust the camera, read [Camera](camera.md).
 - If you need to adjust the ringtone or volume, read [Audio Alert](audio-alert.md).
