@@ -94,7 +94,6 @@ class SettingView(QWidget):
         content_layout.addWidget(vline)
 
         self.content_stack = QStackedWidget()
-        self.content_stack.setObjectName("settingContentStack")
         content_layout.addWidget(self.content_stack, 1)
 
         self.general_page = GeneralPage(self.content_stack)

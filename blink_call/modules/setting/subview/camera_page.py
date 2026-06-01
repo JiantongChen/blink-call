@@ -26,7 +26,7 @@ class CameraPage:
 
         page = QFrame()
         page.setObjectName("settingContentPage")
-        page.setMinimumWidth(650)
+        page.setMinimumWidth(700)
         scroll.setWidget(page)
 
         layout = QVBoxLayout(page)

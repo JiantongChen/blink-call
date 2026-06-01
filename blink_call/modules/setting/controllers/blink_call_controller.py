@@ -194,28 +194,28 @@ class BlinkCallController:
         return normalized
 
     def _add_sequence_row(self, state: str = "open", duration_s: float = 1.0, sound_prompt: bool = True):
-        def _refresh_remove_buttons(controller):
-            enable_remove = len(controller.sequence_rows) > 1
-            for row in controller.sequence_rows:
+        def _refresh_remove_buttons():
+            enable_remove = len(self.sequence_rows) > 1
+            for row in self.sequence_rows:
                 row["remove_btn"].setVisible(enable_remove)
                 row["remove_btn"].setEnabled(enable_remove)
 
-        def _remove_sequence_row(controller, row_widget: QWidget):
-            if len(controller.sequence_rows) <= 1:
+        def _remove_sequence_row(row_widget: QWidget):
+            if len(self.sequence_rows) <= 1:
                 return
 
             remove_idx = -1
-            for idx, row in enumerate(controller.sequence_rows):
+            for idx, row in enumerate(self.sequence_rows):
                 if row["widget"] is row_widget:
                     remove_idx = idx
                     break
             if remove_idx < 0:
                 return
 
-            row = controller.sequence_rows.pop(remove_idx)
+            row = self.sequence_rows.pop(remove_idx)
             row["widget"].deleteLater()
             _refresh_remove_buttons()
-            controller.save_pattern()
+            self.save_pattern()
 
         i18n = get_i18n(self.vm.get_config("ui.language"))
 
@@ -229,7 +229,7 @@ class BlinkCallController:
         state_combo.addItem(i18n["close_eyes"], "closed")
         idx = state_combo.findData(state)
         state_combo.setCurrentIndex(0 if idx < 0 else idx)
-        state_combo.setFixedSize(100, 40)
+        state_combo.setFixedSize(120, 40)
 
         duration_label = QLabel(i18n["duration_seconds"])
         duration_label.setObjectName("settingSubSectionTitle")
@@ -276,9 +276,8 @@ class BlinkCallController:
         state_combo.currentIndexChanged.connect(self.save_pattern)
         duration_spin.valueChanged.connect(self.save_pattern)
         sound_prompt_combo.currentIndexChanged.connect(self.save_pattern)
-        remove_btn.clicked.connect(lambda: _remove_sequence_row(self, row_widget))
-
-        _refresh_remove_buttons(self)
+        remove_btn.clicked.connect(lambda: _remove_sequence_row(row_widget))
+        _refresh_remove_buttons()
 
     def save_pattern(self):
         sequence = []
