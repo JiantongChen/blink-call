@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QStandardPaths, Qt
@@ -9,7 +8,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QScrollArea,
-    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -17,192 +15,136 @@ from PySide6.QtWidgets import (
 from blink_call.widget import HDividerLine, NoWheelSpinBox
 
 
-@dataclass
-class OtherPageWidgets:
-    recording_widgets_row: QWidget
-    recording_label: QLabel
-    recording_start_btn: QPushButton
-    recording_duration_widgets_row: QWidget
-    recording_duration_label: QLabel
-    recording_duration_spin: NoWheelSpinBox
-    recording_duration_unit_label: QLabel
-    recording_path_widgets_row: QWidget
-    recording_path_label: QLabel
-    recording_path_value_label: QLabel
-    recording_path_choose_btn: QPushButton
-    debug_mode_widgets_row: QWidget
-    debug_mode_label: QLabel
-    debug_mode_on_radio: QRadioButton
-    debug_mode_off_radio: QRadioButton
-    debug_log_save_widgets_row: QWidget
-    debug_log_save_label: QLabel
-    debug_log_save_yes_radio: QRadioButton
-    debug_log_save_no_radio: QRadioButton
-    debug_log_path_widgets_row: QWidget
-    debug_log_path_label: QLabel
-    debug_log_path_value_label: QLabel
-    debug_log_path_choose_btn: QPushButton
-    reset_config_label: QLabel
-    reset_config_btn: QPushButton
+class OtherPage:
+    def __init__(self, content_stack):
+        scroll = QScrollArea()
+        scroll.setObjectName("settingRightScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        content_stack.addWidget(scroll)
 
+        page = QFrame()
+        page.setObjectName("settingContentPage")
+        page.setMinimumWidth(650)
+        scroll.setWidget(page)
 
-def build_other_page(content_stack: QStackedWidget) -> OtherPageWidgets:
-    other_scroll = QScrollArea()
-    other_scroll.setObjectName("settingRightScroll")
-    other_scroll.setWidgetResizable(True)
-    other_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-    other_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-    other_scroll.setFrameShape(QFrame.Shape.NoFrame)
-    content_stack.addWidget(other_scroll)
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(16)
 
-    other_page = QFrame()
-    other_page.setObjectName("settingContentPage")
-    other_page.setMinimumWidth(650)
-    other_scroll.setWidget(other_page)
+        default_recording_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+        if not default_recording_dir:
+            default_recording_dir = str(Path.home() / "Desktop")
 
-    other_layout = QVBoxLayout(other_page)
-    other_layout.setContentsMargins(16, 16, 16, 16)
-    other_layout.setSpacing(16)
+        self.recording_row = QWidget()
+        recording_layout = QHBoxLayout(self.recording_row)
+        recording_layout.setContentsMargins(0, 0, 0, 0)
+        recording_layout.setSpacing(16)
+        self.recording_label = QLabel("Current camera data recording")
+        self.recording_label.setObjectName("settingSubSectionTitle")
+        self.recording_btn = QPushButton("Start recording")
+        self.recording_btn.setObjectName("settingStartRecordingBtn")
+        self.recording_btn.setFixedWidth(230)
+        recording_layout.addWidget(self.recording_label)
+        recording_layout.addStretch()
+        recording_layout.addWidget(self.recording_btn)
+        layout.addWidget(self.recording_row)
 
-    default_recording_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
-    if not default_recording_dir:
-        default_recording_dir = str(Path.home() / "Desktop")
+        self.duration_row = QWidget()
+        duration_layout = QHBoxLayout(self.duration_row)
+        duration_layout.setContentsMargins(0, 0, 0, 0)
+        duration_layout.setSpacing(12)
+        self.duration_label = QLabel("Max duration")
+        self.duration_label.setObjectName("settingSubSectionTitle")
+        self.duration_spin = NoWheelSpinBox()
+        self.duration_spin.setRange(1, 1440)
+        self.duration_spin.setSingleStep(1)
+        self.duration_spin.setDecimals(0)
+        self.duration_unit_label = QLabel("min")
+        self.duration_unit_label.setFixedWidth(40)
+        duration_layout.addWidget(self.duration_label)
+        duration_layout.addStretch()
+        duration_layout.addWidget(self.duration_spin)
+        duration_layout.addWidget(self.duration_unit_label)
+        layout.addWidget(self.duration_row)
 
-    recording_widgets_row = QWidget()
-    recording_row = QHBoxLayout(recording_widgets_row)
-    recording_row.setContentsMargins(0, 0, 0, 0)
-    recording_row.setSpacing(16)
-    recording_label = QLabel("Current camera data recording")
-    recording_label.setObjectName("settingSubSectionTitle")
-    recording_start_btn = QPushButton("Start recording")
-    recording_start_btn.setObjectName("settingStartRecordingBtn")
-    recording_start_btn.setFixedWidth(230)
-    recording_row.addWidget(recording_label)
-    recording_row.addStretch()
-    recording_row.addWidget(recording_start_btn)
-    other_layout.addWidget(recording_widgets_row)
+        self.path_row = QWidget()
+        path_layout = QHBoxLayout(self.path_row)
+        path_layout.setContentsMargins(0, 0, 0, 0)
+        path_layout.setSpacing(12)
+        self.path_label = QLabel("Local folder")
+        self.path_label.setObjectName("settingSubSectionTitle")
+        self.path_value_label = QLabel(default_recording_dir)
+        self.path_btn = QPushButton("Choose folder")
+        self.path_btn.setObjectName("settingNormalButton")
+        self.path_btn.setFixedSize(160, 30)
+        path_layout.addWidget(self.path_label)
+        path_layout.addStretch()
+        path_layout.addWidget(self.path_value_label)
+        path_layout.addWidget(self.path_btn)
+        layout.addWidget(self.path_row)
 
-    recording_duration_widgets_row = QWidget()
-    recording_duration_row = QHBoxLayout(recording_duration_widgets_row)
-    recording_duration_row.setContentsMargins(0, 0, 0, 0)
-    recording_duration_row.setSpacing(12)
-    recording_duration_label = QLabel("Max duration")
-    recording_duration_label.setObjectName("settingSubSectionTitle")
-    recording_duration_spin = NoWheelSpinBox()
-    recording_duration_spin.setRange(1, 1440)
-    recording_duration_spin.setSingleStep(1)
-    recording_duration_spin.setDecimals(0)
-    recording_duration_unit_label = QLabel("min")
-    recording_duration_unit_label.setFixedWidth(40)
-    recording_duration_row.addWidget(recording_duration_label)
-    recording_duration_row.addStretch()
-    recording_duration_row.addWidget(recording_duration_spin)
-    recording_duration_row.addWidget(recording_duration_unit_label)
-    other_layout.addWidget(recording_duration_widgets_row)
+        layout.addWidget(HDividerLine())
 
-    recording_path_widgets_row = QWidget()
-    recording_path_row = QHBoxLayout(recording_path_widgets_row)
-    recording_path_row.setContentsMargins(0, 0, 0, 0)
-    recording_path_row.setSpacing(12)
-    recording_path_label = QLabel("Local folder")
-    recording_path_label.setObjectName("settingSubSectionTitle")
-    recording_path_value_label = QLabel(default_recording_dir)
-    recording_path_choose_btn = QPushButton("Choose folder")
-    recording_path_choose_btn.setObjectName("settingNormalButton")
-    recording_path_choose_btn.setFixedSize(160, 30)
-    recording_path_row.addWidget(recording_path_label)
-    recording_path_row.addStretch()
-    recording_path_row.addWidget(recording_path_value_label)
-    recording_path_row.addWidget(recording_path_choose_btn)
-    other_layout.addWidget(recording_path_widgets_row)
+        self.debug_row = QWidget()
+        debug_layout = QHBoxLayout(self.debug_row)
+        debug_layout.setContentsMargins(0, 0, 0, 0)
+        debug_layout.setSpacing(16)
+        self.debug_label = QLabel("Debug mode")
+        self.debug_label.setObjectName("settingSubSectionTitle")
+        self.debug_on_radio = QRadioButton("On")
+        self.debug_off_radio = QRadioButton("Off")
+        debug_layout.addWidget(self.debug_label)
+        debug_layout.addStretch()
+        debug_layout.addWidget(self.debug_on_radio)
+        debug_layout.addWidget(self.debug_off_radio)
+        layout.addWidget(self.debug_row)
 
-    other_layout.addWidget(HDividerLine())
+        self.log_save_row = QWidget()
+        log_save_layout = QHBoxLayout(self.log_save_row)
+        log_save_layout.setContentsMargins(0, 0, 0, 0)
+        log_save_layout.setSpacing(16)
+        self.log_save_label = QLabel("Save to local file")
+        self.log_save_label.setObjectName("settingSubSectionTitle")
+        self.log_save_yes_radio = QRadioButton("Yes")
+        self.log_save_no_radio = QRadioButton("No")
+        log_save_layout.addWidget(self.log_save_label)
+        log_save_layout.addStretch()
+        log_save_layout.addWidget(self.log_save_yes_radio)
+        log_save_layout.addWidget(self.log_save_no_radio)
+        layout.addWidget(self.log_save_row)
 
-    debug_mode_widgets_row = QWidget()
-    debug_mode_row = QHBoxLayout(debug_mode_widgets_row)
-    debug_mode_row.setContentsMargins(0, 0, 0, 0)
-    debug_mode_row.setSpacing(16)
-    debug_mode_label = QLabel("Debug mode")
-    debug_mode_label.setObjectName("settingSubSectionTitle")
-    debug_mode_on_radio = QRadioButton("On")
-    debug_mode_off_radio = QRadioButton("Off")
-    debug_mode_row.addWidget(debug_mode_label)
-    debug_mode_row.addStretch()
-    debug_mode_row.addWidget(debug_mode_on_radio)
-    debug_mode_row.addWidget(debug_mode_off_radio)
-    other_layout.addWidget(debug_mode_widgets_row)
+        self.log_path_row = QWidget()
+        log_path_layout = QHBoxLayout(self.log_path_row)
+        log_path_layout.setContentsMargins(0, 0, 0, 0)
+        log_path_layout.setSpacing(16)
+        self.log_path_label = QLabel("Local file path")
+        self.log_path_label.setObjectName("settingSubSectionTitle")
+        self.log_path_value_label = QLabel("")
+        self.log_path_btn = QPushButton("Choose folder")
+        self.log_path_btn.setObjectName("settingNormalButton")
+        self.log_path_btn.setFixedSize(160, 30)
+        log_path_layout.addWidget(self.log_path_label)
+        log_path_layout.addStretch()
+        log_path_layout.addWidget(self.log_path_value_label)
+        log_path_layout.addWidget(self.log_path_btn)
+        layout.addWidget(self.log_path_row)
 
-    debug_log_save_widgets_row = QWidget()
-    debug_log_save_row = QHBoxLayout(debug_log_save_widgets_row)
-    debug_log_save_row.setContentsMargins(0, 0, 0, 0)
-    debug_log_save_row.setSpacing(16)
-    debug_log_save_label = QLabel("Save to local file")
-    debug_log_save_label.setObjectName("settingSubSectionTitle")
-    debug_log_save_yes_radio = QRadioButton("Yes")
-    debug_log_save_no_radio = QRadioButton("No")
-    debug_log_save_row.addWidget(debug_log_save_label)
-    debug_log_save_row.addStretch()
-    debug_log_save_row.addWidget(debug_log_save_yes_radio)
-    debug_log_save_row.addWidget(debug_log_save_no_radio)
-    other_layout.addWidget(debug_log_save_widgets_row)
+        layout.addWidget(HDividerLine())
 
-    debug_log_path_widgets_row = QWidget()
-    debug_log_path_row = QHBoxLayout(debug_log_path_widgets_row)
-    debug_log_path_row.setContentsMargins(0, 0, 0, 0)
-    debug_log_path_row.setSpacing(16)
-    debug_log_path_label = QLabel("Local file path")
-    debug_log_path_label.setObjectName("settingSubSectionTitle")
-    debug_log_path_value_label = QLabel("")
-    debug_log_path_choose_btn = QPushButton("Choose folder")
-    debug_log_path_choose_btn.setObjectName("settingNormalButton")
-    debug_log_path_choose_btn.setFixedSize(160, 30)
-    debug_log_path_row.addWidget(debug_log_path_label)
-    debug_log_path_row.addStretch()
-    debug_log_path_row.addWidget(debug_log_path_value_label)
-    debug_log_path_row.addWidget(debug_log_path_choose_btn)
-    other_layout.addWidget(debug_log_path_widgets_row)
+        reset_layout = QHBoxLayout()
+        reset_layout.setSpacing(16)
+        self.reset_label = QLabel("Restore defaults")
+        self.reset_label.setObjectName("settingSubSectionTitle")
+        self.reset_btn = QPushButton("Restore defaults")
+        self.reset_btn.setObjectName("settingResetBtn")
+        self.reset_btn.setFixedSize(230, 36)
+        reset_layout.addWidget(self.reset_label)
+        reset_layout.addStretch()
+        reset_layout.addWidget(self.reset_btn)
+        layout.addLayout(reset_layout)
 
-    other_layout.addWidget(HDividerLine())
-
-    reset_config_btn_row = QHBoxLayout()
-    reset_config_btn_row.setSpacing(16)
-    reset_config_label = QLabel("Restore defaults")
-    reset_config_label.setObjectName("settingSubSectionTitle")
-    reset_config_btn = QPushButton("Restore defaults")
-    reset_config_btn.setObjectName("settingResetBtn")
-    reset_config_btn.setFixedSize(230, 36)
-    reset_config_btn_row.addWidget(reset_config_label)
-    reset_config_btn_row.addStretch()
-    reset_config_btn_row.addWidget(reset_config_btn)
-    other_layout.addLayout(reset_config_btn_row)
-
-    other_layout.addWidget(HDividerLine())
-    other_layout.addStretch()
-
-    return OtherPageWidgets(
-        recording_widgets_row=recording_widgets_row,
-        recording_label=recording_label,
-        recording_start_btn=recording_start_btn,
-        recording_duration_widgets_row=recording_duration_widgets_row,
-        recording_duration_label=recording_duration_label,
-        recording_duration_spin=recording_duration_spin,
-        recording_duration_unit_label=recording_duration_unit_label,
-        recording_path_widgets_row=recording_path_widgets_row,
-        recording_path_label=recording_path_label,
-        recording_path_value_label=recording_path_value_label,
-        recording_path_choose_btn=recording_path_choose_btn,
-        debug_mode_widgets_row=debug_mode_widgets_row,
-        debug_mode_label=debug_mode_label,
-        debug_mode_on_radio=debug_mode_on_radio,
-        debug_mode_off_radio=debug_mode_off_radio,
-        debug_log_save_widgets_row=debug_log_save_widgets_row,
-        debug_log_save_label=debug_log_save_label,
-        debug_log_save_yes_radio=debug_log_save_yes_radio,
-        debug_log_save_no_radio=debug_log_save_no_radio,
-        debug_log_path_widgets_row=debug_log_path_widgets_row,
-        debug_log_path_label=debug_log_path_label,
-        debug_log_path_value_label=debug_log_path_value_label,
-        debug_log_path_choose_btn=debug_log_path_choose_btn,
-        reset_config_label=reset_config_label,
-        reset_config_btn=reset_config_btn,
-    )
+        layout.addWidget(HDividerLine())
+        layout.addStretch()
