@@ -35,21 +35,50 @@ class EyeStateClassifier:
     def __init__(self, configs):
         self.confidence_thresh = float(configs.get("confidence_thresh", 0.5))
 
-        self.init_metadata()
+        self.init_defaults()
         self.load_model()
+        self.init_metadata()
+
+    def init_defaults(self):
+        self.class_names = [EyeState.CLOSE.value, EyeState.OPEN.value, "irrelevant"]
+        self.input_name = "images"
+        self.output_name = "logits"
+        self.resize_wh = (64, 64)
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
+        self.std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(1, 1, 3)
 
     def init_metadata(self):
         metadata_path = ViTA_ROOT_PATH / "eye_state_classification.json"
-        metadata = Helper.read_json(metadata_path, {})
+        try:
+            metadata = Helper.read_json(metadata_path, {}) or {}
+        except Exception:
+            metadata = {}
+        if not isinstance(metadata, dict):
+            metadata = {}
 
-        self.class_names = metadata.get("class_names", [EyeState.CLOSE, EyeState.OPEN, EyeState.NOT_EXIST])
-        self.input_name = metadata.get("input_name", "images")
-        self.output_name = metadata.get("output_name", "logits")
+        self.class_names = metadata.get("class_names", self.class_names)
+        self.input_name = metadata.get("input_name") or self._get_session_io_name("input", self.input_name)
+        self.output_name = metadata.get("output_name") or self._get_session_io_name("output", self.output_name)
 
         preprocess = metadata.get("preprocess", {})
-        self.resize_wh = tuple(preprocess.get("resize", [128, 128]))
-        self.mean = np.array(preprocess.get("mean", [0.485, 0.456, 0.406]), dtype=np.float32).reshape(1, 1, 3)
-        self.std = np.array(preprocess.get("std", [0.229, 0.224, 0.225]), dtype=np.float32).reshape(1, 1, 3)
+        if not isinstance(preprocess, dict):
+            preprocess = {}
+        self.resize_wh = tuple(preprocess.get("resize", self.resize_wh))
+        self.mean = np.array(preprocess.get("mean", self.mean.reshape(3).tolist()), dtype=np.float32).reshape(1, 1, 3)
+        self.std = np.array(preprocess.get("std", self.std.reshape(3).tolist()), dtype=np.float32).reshape(1, 1, 3)
+
+    def _get_session_io_name(self, io_type, fallback):
+        if self.session is None:
+            return fallback
+
+        try:
+            nodes = self.session.get_inputs() if io_type == "input" else self.session.get_outputs()
+            if nodes:
+                return getattr(nodes[0], "name", None) or fallback
+        except Exception:
+            pass
+
+        return fallback
 
     def load_model(self):
         model_path = ViTA_ROOT_PATH / "eye_state_classification.onnx"
