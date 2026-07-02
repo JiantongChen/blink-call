@@ -8,14 +8,19 @@ class RetinaFaceONNX:
     """
     RetinaFace ONNX detector.
 
-    Expected outputs:
-        stride32: cls, bbox, landmark
-        stride16: cls, bbox, landmark
-        stride8 : cls, bbox, landmark
+    Supported outputs:
+        6-output bbox-only model:
+            stride32: cls, bbox
+            stride16: cls, bbox
+            stride8 : cls, bbox
+        9-output landmark model:
+            stride32: cls, bbox, landmark
+            stride16: cls, bbox, landmark
+            stride8 : cls, bbox, landmark
 
     Returns:
         dets: [N, 5] -> x1, y1, x2, y2, score
-        landmarks5: [N, 5, 2]
+        landmarks5: [N, 5, 2] when model has landmarks, otherwise [N, 0, 2]
     """
 
     def __init__(
@@ -26,12 +31,15 @@ class RetinaFaceONNX:
         score_thresh=0.8,
         nms_thresh=0.3,
         cls_is_score=True,
+        bgr_to_rgb=True,
     ):
         self.onnx_path = str(onnx_path)
         self.input_size = tuple(input_size)  # (w, h)
         self.score_thresh = float(score_thresh)
         self.nms_thresh = float(nms_thresh)
         self.cls_is_score = bool(cls_is_score)
+        self.bgr_to_rgb = bool(bgr_to_rgb)
+        self.last_debug_info = ""
 
         self.strides = [32, 16, 8]
         self.anchor_cfg = {
@@ -43,6 +51,21 @@ class RetinaFaceONNX:
         self.session = Helper.create_ort_session(self.onnx_path, ctx_id)
         self.input_name = self.session.get_inputs()[0].name
         self.output_names = [o.name for o in self.session.get_outputs()]
+        self._use_static_model_size_if_available()
+        self.last_debug_info = (
+            f"retina_path={self.onnx_path}, input_size={self.input_size}, "
+            f"outputs={len(self.output_names)}, bgr_to_rgb={self.bgr_to_rgb}, "
+            f"cls_is_score={self.cls_is_score}, score_thresh={self.score_thresh}"
+        )
+
+    def _use_static_model_size_if_available(self):
+        shape = self.session.get_inputs()[0].shape
+        if len(shape) != 4:
+            return
+        h = shape[2]
+        w = shape[3]
+        if isinstance(h, int) and isinstance(w, int):
+            self.input_size = (w, h)
 
     @staticmethod
     def softmax_channel(cls_score, num_anchors):
@@ -183,6 +206,8 @@ class RetinaFaceONNX:
         new_h = int(round(orig_h * scale))
 
         resized = cv2.resize(img, (new_w, new_h)).astype(np.float32)
+        if self.bgr_to_rgb:
+            resized = resized[:, :, ::-1]
         canvas = np.zeros((input_h, input_w, 3), dtype=np.float32)
 
         pad_x = (input_w - new_w) // 2
@@ -207,43 +232,47 @@ class RetinaFaceONNX:
             for stride in self.strides:
                 if f"stride{stride}" not in lname:
                     continue
-                if "cls" in lname:
-                    grouped[(stride, "cls")] = arr
+                if "landmark" in lname:
+                    grouped[(stride, "landmark")] = arr
                 elif "bbox" in lname:
                     grouped[(stride, "bbox")] = arr
-                elif "landmark" in lname:
-                    grouped[(stride, "landmark")] = arr
+                elif "cls" in lname:
+                    grouped[(stride, "cls")] = arr
 
-        required = []
+        required_box = []
         for s in self.strides:
-            required.extend([(s, "cls"), (s, "bbox"), (s, "landmark")])
+            required_box.extend([(s, "cls"), (s, "bbox")])
 
-        if all(k in grouped for k in required):
+        if all(k in grouped for k in required_box):
             return grouped
 
-        if len(outputs) != 9:
-            raise RuntimeError(f"Expected 9 outputs, got {len(outputs)}")
+        if len(outputs) not in (6, 9):
+            raise RuntimeError(f"Expected 6 or 9 outputs, got {len(outputs)}")
 
         grouped = {}
         idx = 0
+        has_landmark = len(outputs) == 9
         for stride in self.strides:
             grouped[(stride, "cls")] = outputs[idx]
             grouped[(stride, "bbox")] = outputs[idx + 1]
-            grouped[(stride, "landmark")] = outputs[idx + 2]
-            idx += 3
+            idx += 2
+            if has_landmark:
+                grouped[(stride, "landmark")] = outputs[idx]
+                idx += 1
 
         return grouped
 
     def decode_one_stride(self, cls, bbox, landmark, stride):
         cls = np.asarray(cls)
         bbox = np.asarray(bbox)
-        landmark = np.asarray(landmark)
+        if landmark is not None:
+            landmark = np.asarray(landmark)
 
         if cls.ndim == 3:
             cls = cls[None, ...]
         if bbox.ndim == 3:
             bbox = bbox[None, ...]
-        if landmark.ndim == 3:
+        if landmark is not None and landmark.ndim == 3:
             landmark = landmark[None, ...]
 
         _, cls_c, feat_h, feat_w = cls.shape
@@ -274,15 +303,18 @@ class RetinaFaceONNX:
         bbox = bbox.transpose(0, 3, 4, 1, 2).reshape(-1, 4)
         boxes = self.bbox_pred(anchors, bbox)
 
-        landmark = landmark.reshape(1, num_anchors, 10, feat_h, feat_w)
-        landmark = landmark.transpose(0, 3, 4, 1, 2).reshape(-1, 5, 2)
-        landmarks = self.landmark_pred(anchors, landmark)
+        landmarks = None
+        if landmark is not None:
+            landmark = landmark.reshape(1, num_anchors, 10, feat_h, feat_w)
+            landmark = landmark.transpose(0, 3, 4, 1, 2).reshape(-1, 5, 2)
+            landmarks = self.landmark_pred(anchors, landmark)
 
         input_w, input_h = self.input_size
         boxes[:, [0, 2]] = np.clip(boxes[:, [0, 2]], 0, input_w - 1)
         boxes[:, [1, 3]] = np.clip(boxes[:, [1, 3]], 0, input_h - 1)
-        landmarks[:, :, 0] = np.clip(landmarks[:, :, 0], 0, input_w - 1)
-        landmarks[:, :, 1] = np.clip(landmarks[:, :, 1], 0, input_h - 1)
+        if landmarks is not None:
+            landmarks[:, :, 0] = np.clip(landmarks[:, :, 0], 0, input_w - 1)
+            landmarks[:, :, 1] = np.clip(landmarks[:, :, 1], 0, input_h - 1)
 
         return boxes, scores, landmarks
 
@@ -296,14 +328,19 @@ class RetinaFaceONNX:
         all_boxes = []
         all_scores = []
         all_landmarks = []
+        max_score_seen = -1.0
+        has_landmark = all((stride, "landmark") in grouped for stride in self.strides)
 
         for stride in self.strides:
             boxes, scores, landmarks = self.decode_one_stride(
                 cls=grouped[(stride, "cls")],
                 bbox=grouped[(stride, "bbox")],
-                landmark=grouped[(stride, "landmark")],
+                landmark=grouped.get((stride, "landmark")),
                 stride=stride,
             )
+
+            if scores.size:
+                max_score_seen = max(max_score_seen, float(np.max(scores)))
 
             keep = np.where(scores >= self.score_thresh)[0]
             if keep.size == 0:
@@ -311,22 +348,30 @@ class RetinaFaceONNX:
 
             all_boxes.append(boxes[keep])
             all_scores.append(scores[keep])
-            all_landmarks.append(landmarks[keep])
+            if has_landmark and landmarks is not None:
+                all_landmarks.append(landmarks[keep])
 
         if len(all_boxes) == 0:
+            self.last_debug_info = (
+                f"retina_path={self.onnx_path}, input_size={self.input_size}, "
+                f"outputs={len(outputs)}, has_landmark={has_landmark}, "
+                f"max_score={max_score_seen:.4f}, score_thresh={self.score_thresh}, "
+                f"bgr_to_rgb={self.bgr_to_rgb}, cls_is_score={self.cls_is_score}"
+            )
             return (
                 np.zeros((0, 5), dtype=np.float32),
-                np.zeros((0, 5, 2), dtype=np.float32),
+                np.zeros((0, 0, 2), dtype=np.float32),
             )
 
         boxes = np.vstack(all_boxes)
         scores = np.concatenate(all_scores)
-        landmarks = np.vstack(all_landmarks)
+        landmarks = np.vstack(all_landmarks) if has_landmark else None
 
         dets = np.hstack([boxes, scores[:, None]]).astype(np.float32)
         keep = self.nms(dets, self.nms_thresh)
         dets = dets[keep]
-        landmarks = landmarks[keep]
+        if landmarks is not None:
+            landmarks = landmarks[keep]
 
         scale = meta["scale"]
         pad_x = meta["pad_x"]
@@ -335,12 +380,23 @@ class RetinaFaceONNX:
         dets[:, [0, 2]] = (dets[:, [0, 2]] - pad_x) / scale
         dets[:, [1, 3]] = (dets[:, [1, 3]] - pad_y) / scale
 
-        landmarks[:, :, 0] = (landmarks[:, :, 0] - pad_x) / scale
-        landmarks[:, :, 1] = (landmarks[:, :, 1] - pad_y) / scale
+        if landmarks is not None:
+            landmarks[:, :, 0] = (landmarks[:, :, 0] - pad_x) / scale
+            landmarks[:, :, 1] = (landmarks[:, :, 1] - pad_y) / scale
 
         dets[:, [0, 2]] = np.clip(dets[:, [0, 2]], 0, original_w - 1)
         dets[:, [1, 3]] = np.clip(dets[:, [1, 3]], 0, original_h - 1)
-        landmarks[:, :, 0] = np.clip(landmarks[:, :, 0], 0, original_w - 1)
-        landmarks[:, :, 1] = np.clip(landmarks[:, :, 1], 0, original_h - 1)
+        if landmarks is not None:
+            landmarks[:, :, 0] = np.clip(landmarks[:, :, 0], 0, original_w - 1)
+            landmarks[:, :, 1] = np.clip(landmarks[:, :, 1], 0, original_h - 1)
+        else:
+            landmarks = np.zeros((dets.shape[0], 0, 2), dtype=np.float32)
 
+        self.last_debug_info = (
+            f"retina_path={self.onnx_path}, input_size={self.input_size}, "
+            f"outputs={len(outputs)}, has_landmark={has_landmark}, "
+            f"max_score={max_score_seen:.4f}, kept={dets.shape[0]}, "
+            f"score_thresh={self.score_thresh}, bgr_to_rgb={self.bgr_to_rgb}, "
+            f"cls_is_score={self.cls_is_score}"
+        )
         return dets.astype(np.float32), landmarks.astype(np.float32)
