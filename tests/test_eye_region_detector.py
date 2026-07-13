@@ -80,6 +80,7 @@ class EyeRegionDetectorTest(unittest.TestCase):
 
         self.assertEqual(detector.face_detector.calls, [(100, 200), (50, 100)])
         self.assertEqual(detector.landmarker.face_boxes[0], [60.0, 30.0, 100.0, 70.0])
+        self.assertEqual(result["face_bbox_xyxy"], [60.0, 30.0, 100.0, 70.0])
         self.assertIn("mode=center_zoom", result["debug_info"])
         self.assertIsNotNone(result["eye_bbox_xyxy"])
 
@@ -93,6 +94,7 @@ class EyeRegionDetectorTest(unittest.TestCase):
 
         self.assertEqual(detector.face_detector.calls, [(80, 80)])
         self.assertEqual(detector.landmarker.face_boxes[0], [70.0, 20.0, 90.0, 50.0])
+        self.assertEqual(result["face_bbox_xyxy"], [70.0, 20.0, 90.0, 50.0])
         self.assertIn("mode=tracking_roi", result["debug_info"])
 
     def test_eye_padding_shrinks_for_a_small_face(self):

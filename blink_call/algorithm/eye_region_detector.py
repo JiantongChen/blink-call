@@ -99,28 +99,6 @@ class EyeRegionDetector:
         faces[:, [1, 3]] += y1
         return faces
 
-    @staticmethod
-    def _refine_face_bbox(landmarks, frame_shape):
-        """Build a stable visual face box from landmarks, including forehead."""
-        h, w = frame_shape[:2]
-        x_min = float(np.min(landmarks[:, 0]))
-        y_min = float(np.min(landmarks[:, 1]))
-        x_max = float(np.max(landmarks[:, 0]))
-        y_max = float(np.max(landmarks[:, 1]))
-        face_w = max(2.0, x_max - x_min)
-        face_h = max(2.0, y_max - y_min)
-
-        # WFLW has no forehead landmarks, hence the asymmetric top padding.
-        pad_x = 0.08 * face_w
-        pad_top = 0.28 * face_h
-        pad_bottom = 0.06 * face_h
-        return [
-            max(0.0, x_min - pad_x),
-            max(0.0, y_min - pad_top),
-            min(float(w - 1), x_max + pad_x),
-            min(float(h - 1), y_max + pad_bottom),
-        ]
-
     def detect(self, frame):
         if frame is None:
             return self._return_data(debug_info="frame is None")
@@ -190,9 +168,8 @@ class EyeRegionDetector:
                 selected_eye = "right"
                 selected_points = landmarks[self.eye_indices["right"]]
 
-            refined_face_bbox = self._refine_face_bbox(landmarks, frame.shape)
-            refined_face_width = refined_face_bbox[2] - refined_face_bbox[0]
-            adaptive_padding = int(round(refined_face_width * self.eye_padding_ratio))
+            face_width = max(2.0, face_bbox[2] - face_bbox[0])
+            adaptive_padding = int(round(face_width * self.eye_padding_ratio))
             adaptive_padding = max(
                 self.min_eye_padding,
                 min(self.eye_padding, adaptive_padding),
@@ -201,7 +178,9 @@ class EyeRegionDetector:
         except Exception as exc:
             return self._return_data(debug_info=f"eye selection error: {exc}")
 
-        self.last_face_bbox = refined_face_bbox
+        # Keep the RetinaFace box as the face-box result and tracking input.
+        # HRNet landmarks are a downstream result and must not redefine it.
+        self.last_face_bbox = face_bbox
 
         retina_debug = getattr(self.face_detector, "last_debug_info", "")
         debug_info = (
@@ -217,7 +196,7 @@ class EyeRegionDetector:
 
         return self._return_data(
             eye_bbox_xyxy=eye_bbox,
-            face_bbox_xyxy=[float(v) for v in refined_face_bbox],
+            face_bbox_xyxy=[float(v) for v in face_bbox],
             landmarks=landmarks.tolist(),
             landmark_scores=None if landmark_scores is None else landmark_scores.tolist(),
             debug_info=debug_info,
