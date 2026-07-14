@@ -49,6 +49,14 @@ class InferenceWorker(QThread):
         self.in_transition_buffer = False
         self.transition_elapsed_s = 0.0
 
+        self.valid_eye_states = ("open", "closed")
+        self.state_hold_s = 0.45
+        self.state_vote_window_size = 5
+        self.state_vote_min_count = 3
+        self.state_vote_window = []
+        self.last_stable_eye_state = None
+        self.last_stable_eye_state_s = 0.0
+
     def reset_progress_state(self):
         self.progress_step_idx = 0
         self.progress_in_step_s = 0.0
@@ -120,7 +128,8 @@ class InferenceWorker(QThread):
         cls_result = self.eye_state_classifier.classify(eye_roi)
         self.debug_info(f"[EyeStateClassifier] debug info: {cls_result['debug_info']}", "eye_state")
 
-        eye_state = cls_result.get("state")
+        raw_eye_state = cls_result.get("state")
+        eye_state = self.stabilize_eye_state(raw_eye_state)
         confidence = cls_result.get("confidence")
         progress_ratio, blinck_call_flag, stage_sound_prompt_flag = self.update_forward_progress(eye_state)
 
@@ -133,7 +142,12 @@ class InferenceWorker(QThread):
             "debug_face_bbox_xyxy": self.latest_face_bbox,
             "debug_landmarks": self.latest_landmarks,
             "debug_info": "\n".join(
-                [f"eye_state: {eye_state}", f"confidence: {confidence:.3f}", f"pattern_progress: {progress_ratio:.3f}"]
+                [
+                    f"eye_state: {eye_state}",
+                    f"raw_eye_state: {raw_eye_state}",
+                    f"confidence: {confidence:.3f}",
+                    f"pattern_progress: {progress_ratio:.3f}",
+                ]
             ),
         }
 
@@ -165,6 +179,34 @@ class InferenceWorker(QThread):
             self.bbox_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="eye-region")
 
         self.pending_bbox_future = self.bbox_executor.submit(self.eye_region_detector.detect, frame.copy())
+
+    def stabilize_eye_state(self, raw_eye_state):
+        if hasattr(raw_eye_state, "value"):
+            normalized_state = raw_eye_state.value
+        elif raw_eye_state is None:
+            normalized_state = None
+        else:
+            normalized_state = str(raw_eye_state)
+
+        now = time.perf_counter()
+        if normalized_state in self.valid_eye_states:
+            self.state_vote_window.append(normalized_state)
+            self.state_vote_window = self.state_vote_window[-self.state_vote_window_size :]
+
+            voted_state = max(self.valid_eye_states, key=self.state_vote_window.count)
+            if self.state_vote_window.count(voted_state) >= self.state_vote_min_count:
+                self.last_stable_eye_state = voted_state
+                self.last_stable_eye_state_s = now
+                return voted_state
+
+            if self.last_stable_eye_state and now - self.last_stable_eye_state_s <= self.state_hold_s:
+                return self.last_stable_eye_state
+            return normalized_state
+
+        if self.last_stable_eye_state and now - self.last_stable_eye_state_s <= self.state_hold_s:
+            return self.last_stable_eye_state
+
+        return normalized_state
 
     def update_forward_progress(self, eye_state):
         now = time.perf_counter()

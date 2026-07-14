@@ -57,6 +57,16 @@ class EyeRegionDetector:
         # around its last position so that it occupies more detector pixels.
         self.tracking_roi_scale = float(configs.get("tracking_roi_scale", 3.0))
         self.fallback_crop_ratio = float(configs.get("fallback_crop_ratio", 0.65))
+
+        self.eye_switch_margin = float(configs.get("eye_switch_margin", 0.08))
+        self.eye_switch_confirm_frames = int(configs.get("eye_switch_confirm_frames", 5))
+        self.eye_bad_score_thresh = float(configs.get("eye_bad_score_thresh", 0.65))
+        self.eye_bad_confirm_frames = int(configs.get("eye_bad_confirm_frames", 3))
+        self.locked_eye = None
+        self.switch_candidate = None
+        self.switch_count = 0
+        self.bad_count = 0
+
         self.last_face_bbox = None
 
     @staticmethod
@@ -98,6 +108,73 @@ class EyeRegionDetector:
         faces[:, [0, 2]] += x1
         faces[:, [1, 3]] += y1
         return faces
+
+    @staticmethod
+    def _eye_score(landmark_scores, indices):
+        if landmark_scores is None:
+            return {"score": 1.0, "mean": 1.0, "min": 1.0}
+
+        scores = np.asarray(landmark_scores[indices], dtype=np.float32)
+        if scores.size == 0:
+            return {"score": 0.0, "mean": 0.0, "min": 0.0}
+
+        mean_score = float(np.mean(scores))
+        min_score = float(np.min(scores))
+        return {"score": 0.8 * mean_score + 0.2 * min_score, "mean": mean_score, "min": min_score}
+
+    def _select_stable_eye(self, landmark_scores):
+        left = self._eye_score(landmark_scores, self.eye_indices["left"])
+        right = self._eye_score(landmark_scores, self.eye_indices["right"])
+        scores = {"left": left, "right": right}
+
+        if self.locked_eye is None:
+            self.locked_eye = "left" if left["score"] >= right["score"] else "right"
+            reason = "initial"
+        else:
+            reason = "locked"
+
+        current_eye = self.locked_eye
+        other_eye = "right" if current_eye == "left" else "left"
+        current_score = scores[current_eye]["score"]
+        other_score = scores[other_eye]["score"]
+
+        if current_score < self.eye_bad_score_thresh and other_score > current_score:
+            self.bad_count += 1
+        else:
+            self.bad_count = 0
+
+        score_gap = other_score - current_score
+        should_consider_switch = score_gap >= self.eye_switch_margin or self.bad_count >= self.eye_bad_confirm_frames
+
+        if should_consider_switch:
+            if self.switch_candidate == other_eye:
+                self.switch_count += 1
+            else:
+                self.switch_candidate = other_eye
+                self.switch_count = 1
+
+            if self.switch_count >= self.eye_switch_confirm_frames:
+                self.locked_eye = other_eye
+                self.switch_candidate = None
+                self.switch_count = 0
+                self.bad_count = 0
+                reason = "switch_confirmed"
+            else:
+                reason = f"switch_pending_{self.switch_count}/{self.eye_switch_confirm_frames}"
+        else:
+            self.switch_candidate = None
+            self.switch_count = 0
+
+        return self.locked_eye, {
+            "left_score": left["score"],
+            "right_score": right["score"],
+            "left_mean": left["mean"],
+            "right_mean": right["mean"],
+            "left_min": left["min"],
+            "right_min": right["min"],
+            "score_gap": scores["right"]["score"] - scores["left"]["score"],
+            "reason": reason,
+        }
 
     def detect(self, frame):
         if frame is None:
@@ -155,18 +232,8 @@ class EyeRegionDetector:
         # 3. Select eye area
         t2 = time.perf_counter()
         try:
-            if landmark_scores is None:
-                left_score = right_score = 1.0
-            else:
-                left_score = np.mean(landmark_scores[self.eye_indices["left"]])
-                right_score = np.mean(landmark_scores[self.eye_indices["right"]])
-
-            if left_score >= right_score:
-                selected_eye = "left"
-                selected_points = landmarks[self.eye_indices["left"]]
-            else:
-                selected_eye = "right"
-                selected_points = landmarks[self.eye_indices["right"]]
+            selected_eye, eye_score_info = self._select_stable_eye(landmark_scores)
+            selected_points = landmarks[self.eye_indices[selected_eye]]
 
             face_width = max(2.0, face_bbox[2] - face_bbox[0])
             adaptive_padding = int(round(face_width * self.eye_padding_ratio))
@@ -185,8 +252,13 @@ class EyeRegionDetector:
         retina_debug = getattr(self.face_detector, "last_debug_info", "")
         debug_info = (
             f"select {selected_eye} eye: "
-            f"left_score={left_score:.3f}, "
-            f"right_score={right_score:.3f}, "
+            f"left_score={eye_score_info['left_score']:.3f}, "
+            f"right_score={eye_score_info['right_score']:.3f}, "
+            f"left_min={eye_score_info['left_min']:.3f}, "
+            f"right_min={eye_score_info['right_min']:.3f}, "
+            f"score_gap={eye_score_info['score_gap']:.3f}, "
+            f"reason={eye_score_info['reason']}, "
+            f"switch_count={self.switch_count}, bad_count={self.bad_count}, "
             f"mode={detection_mode}, eye_padding={adaptive_padding}, "
             f"det_ms={(t1 - t0) * 1000.0:.1f}, "
             f"lmk_ms={(t2 - t1) * 1000.0:.1f}, "
