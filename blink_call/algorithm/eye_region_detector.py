@@ -60,7 +60,9 @@ class EyeRegionDetector:
 
         self.eye_switch_margin = float(configs.get("eye_switch_margin", 0.08))
         self.eye_switch_confirm_frames = int(configs.get("eye_switch_confirm_frames", 5))
-        self.eye_near_weight = float(configs.get("eye_near_weight", 0.12))
+        self.eye_near_weight = float(configs.get("eye_near_weight", 0.25))
+        self.eye_pose_deadzone = float(configs.get("eye_pose_deadzone", 0.03))
+        self.eye_pose_full_scale = float(configs.get("eye_pose_full_scale", 0.22))
         self.eye_bad_score_thresh = float(configs.get("eye_bad_score_thresh", 0.65))
         self.eye_bad_confirm_frames = int(configs.get("eye_bad_confirm_frames", 3))
         self.locked_eye = None
@@ -124,24 +126,54 @@ class EyeRegionDetector:
         return {"score": 0.8 * mean_score + 0.2 * min_score, "mean": mean_score, "min": min_score}
 
     @staticmethod
-    def _eye_nearness_score(landmarks, indices):
+    def _points_center(landmarks, indices):
         points = np.asarray(landmarks[indices], dtype=np.float32)
         if points.size == 0:
-            return 0.0
+            return np.array([0.0, 0.0], dtype=np.float32)
+        return np.mean(points, axis=0)
 
-        width = float(np.max(points[:, 0]) - np.min(points[:, 0]))
-        height = float(np.max(points[:, 1]) - np.min(points[:, 1]))
-        return max(0.0, width) * max(0.0, height)
+    def _eye_pose_nearness(self, landmarks):
+        left_center = self._points_center(landmarks, self.eye_indices["left"])
+        right_center = self._points_center(landmarks, self.eye_indices["right"])
+        eye_mid_x = 0.5 * (float(left_center[0]) + float(right_center[0]))
+        eye_distance = max(1.0, abs(float(left_center[0]) - float(right_center[0])))
+
+        if len(landmarks) >= 60:
+            nose_center = self._points_center(landmarks, list(range(55, 60)))
+        elif len(landmarks) >= 55:
+            nose_center = self._points_center(landmarks, list(range(51, 55)))
+        else:
+            nose_center = np.array([eye_mid_x, 0.0], dtype=np.float32)
+
+        yaw_signal = (float(nose_center[0]) - eye_mid_x) / eye_distance
+        pose_strength = max(0.0, abs(yaw_signal) - self.eye_pose_deadzone)
+        pose_strength = min(1.0, pose_strength / max(self.eye_pose_full_scale, 1e-6))
+
+        left_label_is_image_left = float(left_center[0]) <= float(right_center[0])
+        near_image_left = yaw_signal > self.eye_pose_deadzone
+        near_label = None
+        if pose_strength > 0.0:
+            if near_image_left:
+                near_label = "left" if left_label_is_image_left else "right"
+            else:
+                near_label = "right" if left_label_is_image_left else "left"
+
+        left_near_ratio = 0.5
+        right_near_ratio = 0.5
+        if near_label == "left":
+            left_near_ratio = 0.5 + 0.5 * pose_strength
+            right_near_ratio = 1.0 - left_near_ratio
+        elif near_label == "right":
+            right_near_ratio = 0.5 + 0.5 * pose_strength
+            left_near_ratio = 1.0 - right_near_ratio
+
+        return left_near_ratio, right_near_ratio, yaw_signal, near_label or "front"
 
     def _select_stable_eye(self, landmarks, landmark_scores):
         left = self._eye_score(landmark_scores, self.eye_indices["left"])
         right = self._eye_score(landmark_scores, self.eye_indices["right"])
 
-        left_near = self._eye_nearness_score(landmarks, self.eye_indices["left"])
-        right_near = self._eye_nearness_score(landmarks, self.eye_indices["right"])
-        near_total = max(left_near + right_near, 1.0)
-        left_near_ratio = left_near / near_total
-        right_near_ratio = right_near / near_total
+        left_near_ratio, right_near_ratio, yaw_signal, near_label = self._eye_pose_nearness(landmarks)
 
         left_total = left["score"] + self.eye_near_weight * left_near_ratio
         right_total = right["score"] + self.eye_near_weight * right_near_ratio
@@ -197,6 +229,8 @@ class EyeRegionDetector:
             "right_total": right_total,
             "left_near": left_near_ratio,
             "right_near": right_near_ratio,
+            "yaw_signal": yaw_signal,
+            "near_label": near_label,
             "left_mean": left["mean"],
             "right_mean": right["mean"],
             "left_min": left["min"],
@@ -287,6 +321,8 @@ class EyeRegionDetector:
             f"right_near={eye_score_info['right_near']:.3f}, "
             f"left_total={eye_score_info['left_total']:.3f}, "
             f"right_total={eye_score_info['right_total']:.3f}, "
+            f"yaw_signal={eye_score_info['yaw_signal']:.3f}, "
+            f"near_label={eye_score_info['near_label']}, "
             f"left_min={eye_score_info['left_min']:.3f}, "
             f"right_min={eye_score_info['right_min']:.3f}, "
             f"score_gap={eye_score_info['score_gap']:.3f}, "
