@@ -60,6 +60,7 @@ class EyeRegionDetector:
 
         self.eye_switch_margin = float(configs.get("eye_switch_margin", 0.08))
         self.eye_switch_confirm_frames = int(configs.get("eye_switch_confirm_frames", 5))
+        self.eye_near_weight = float(configs.get("eye_near_weight", 0.12))
         self.eye_bad_score_thresh = float(configs.get("eye_bad_score_thresh", 0.65))
         self.eye_bad_confirm_frames = int(configs.get("eye_bad_confirm_frames", 3))
         self.locked_eye = None
@@ -122,23 +123,47 @@ class EyeRegionDetector:
         min_score = float(np.min(scores))
         return {"score": 0.8 * mean_score + 0.2 * min_score, "mean": mean_score, "min": min_score}
 
-    def _select_stable_eye(self, landmark_scores):
+    @staticmethod
+    def _eye_nearness_score(landmarks, indices):
+        points = np.asarray(landmarks[indices], dtype=np.float32)
+        if points.size == 0:
+            return 0.0
+
+        width = float(np.max(points[:, 0]) - np.min(points[:, 0]))
+        height = float(np.max(points[:, 1]) - np.min(points[:, 1]))
+        return max(0.0, width) * max(0.0, height)
+
+    def _select_stable_eye(self, landmarks, landmark_scores):
         left = self._eye_score(landmark_scores, self.eye_indices["left"])
         right = self._eye_score(landmark_scores, self.eye_indices["right"])
-        scores = {"left": left, "right": right}
+
+        left_near = self._eye_nearness_score(landmarks, self.eye_indices["left"])
+        right_near = self._eye_nearness_score(landmarks, self.eye_indices["right"])
+        near_total = max(left_near + right_near, 1.0)
+        left_near_ratio = left_near / near_total
+        right_near_ratio = right_near / near_total
+
+        left_total = left["score"] + self.eye_near_weight * left_near_ratio
+        right_total = right["score"] + self.eye_near_weight * right_near_ratio
+        scores = {
+            "left": {**left, "near": left_near_ratio, "total": left_total},
+            "right": {**right, "near": right_near_ratio, "total": right_total},
+        }
 
         if self.locked_eye is None:
-            self.locked_eye = "left" if left["score"] >= right["score"] else "right"
+            self.locked_eye = "left" if left_total >= right_total else "right"
             reason = "initial"
         else:
             reason = "locked"
 
         current_eye = self.locked_eye
         other_eye = "right" if current_eye == "left" else "left"
-        current_score = scores[current_eye]["score"]
-        other_score = scores[other_eye]["score"]
+        current_score = scores[current_eye]["total"]
+        other_score = scores[other_eye]["total"]
+        current_confidence = scores[current_eye]["score"]
+        other_confidence = scores[other_eye]["score"]
 
-        if current_score < self.eye_bad_score_thresh and other_score > current_score:
+        if current_confidence < self.eye_bad_score_thresh and other_score > current_score:
             self.bad_count += 1
         else:
             self.bad_count = 0
@@ -168,11 +193,15 @@ class EyeRegionDetector:
         return self.locked_eye, {
             "left_score": left["score"],
             "right_score": right["score"],
+            "left_total": left_total,
+            "right_total": right_total,
+            "left_near": left_near_ratio,
+            "right_near": right_near_ratio,
             "left_mean": left["mean"],
             "right_mean": right["mean"],
             "left_min": left["min"],
             "right_min": right["min"],
-            "score_gap": scores["right"]["score"] - scores["left"]["score"],
+            "score_gap": scores["right"]["total"] - scores["left"]["total"],
             "reason": reason,
         }
 
@@ -232,7 +261,7 @@ class EyeRegionDetector:
         # 3. Select eye area
         t2 = time.perf_counter()
         try:
-            selected_eye, eye_score_info = self._select_stable_eye(landmark_scores)
+            selected_eye, eye_score_info = self._select_stable_eye(landmarks, landmark_scores)
             selected_points = landmarks[self.eye_indices[selected_eye]]
 
             face_width = max(2.0, face_bbox[2] - face_bbox[0])
@@ -254,6 +283,10 @@ class EyeRegionDetector:
             f"select {selected_eye} eye: "
             f"left_score={eye_score_info['left_score']:.3f}, "
             f"right_score={eye_score_info['right_score']:.3f}, "
+            f"left_near={eye_score_info['left_near']:.3f}, "
+            f"right_near={eye_score_info['right_near']:.3f}, "
+            f"left_total={eye_score_info['left_total']:.3f}, "
+            f"right_total={eye_score_info['right_total']:.3f}, "
             f"left_min={eye_score_info['left_min']:.3f}, "
             f"right_min={eye_score_info['right_min']:.3f}, "
             f"score_gap={eye_score_info['score_gap']:.3f}, "
