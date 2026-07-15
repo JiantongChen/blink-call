@@ -47,7 +47,7 @@ This project includes developer documentation and setup guidance to help you get
 ### 🚀 Quick Setup & Launch
 - Step 1: Clone the Repository
   ```bash
-  git clone --recurse-submodules https://github.com/JiantongChen/blink-call.git
+  git clone https://github.com/JiantongChen/blink-call.git
   cd blink-call
   ```
 - Step 2: Setup Conda Environment and Dependencies
@@ -82,8 +82,8 @@ This repository does not handle model training and ONNX model file replacement. 
 After obtaining the corresponding ONNX model files, replace the files in the ModelScope model [repository](https://www.modelscope.cn/models/BlinkCall/blink_call_model_files/files).
 
 > [!WARNING]
-> Updating ONNX files in the ModelScope model repository will directly affect end users. Please do not modify them without caution.  
-> When updating ONNX models, ensure that both file paths and filenames remain exactly the same. Also, be sure to check (and update) the contents of the `project_info.json` file in the ModelScope repository.
+> When updating ONNX models, ensure that both file paths and filenames remain exactly the same.  
+> When releasing a software version, please add a tag with the same version name to the ModelScope repository.
 
 ### 📦 Building with Nuitka
 After development is completed, the software can be built with Nuitka for standalone distribution. The Nuitka build command is shown below.

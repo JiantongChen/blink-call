@@ -47,7 +47,7 @@
 ### 🚀 快速安装与启动
 - 步骤一: 克隆本仓库至本地
   ```bash
-  git clone --recurse-submodules https://github.com/JiantongChen/blink-call.git
+  git clone https://github.com/JiantongChen/blink-call.git
   cd blink-call
   ```
 - 步骤二: 安装Python依赖环境
@@ -82,8 +82,8 @@
 获取对应 ONNX 模型文件后，请替换该 ModelScope [模型库](https://www.modelscope.cn/models/BlinkCall/blink_call_model_files/files)中的文件。
 
 > [!WARNING]
-> 更新 ModelScope 模型仓库中的 ONNX 文件会直接影响所有用户，请谨慎修改。  
-> 更新 ONNX 模型时，请确保文件路径和文件名保持完全一致。同时，务必检查（和更新） ModelScope 仓库中的`project_info.json`文件内容。
+> 更新 ONNX 模型时，请确保文件路径和文件名保持完全一致。  
+> 释放软件版本时，请将 ModelScope 仓库新增同版本号名称的标签。
 
 ### 📦 使用 Nuitka 打包
 开发完成后，可使用 Nuitka 将软件打包为独立分发版本。命令如下：

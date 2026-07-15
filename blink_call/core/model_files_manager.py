@@ -1,12 +1,9 @@
 import shutil
-import tempfile
 import threading
-from enum import Enum
 from pathlib import Path
 
 from modelscope.hub import ProgressCallback
 from modelscope.hub.api import HubApi
-from modelscope.hub.file_download import model_file_download
 from modelscope.hub.snapshot_download import snapshot_download
 from PySide6.QtCore import QObject, QStandardPaths, Signal
 from requests.exceptions import ConnectionError, Timeout
@@ -17,7 +14,7 @@ APP_DATA_LOCAL_PATH = Path(QStandardPaths.writableLocation(QStandardPaths.AppDat
 MODEL_ID = "BlinkCall/blink_call_model_files"
 REPO_NAME = "blink_call_model_files"
 MODEL_INFO_FILE = "model_info.json"
-PROJECT_INFO_FILE = "project_info.json"
+DEFAULT_REVISION = "master"
 VERSION_FILE = Path(__file__).resolve().parents[2] / "VERSION"
 REQUIRED_MODEL_FILES = (
     ("ViTA", "eye_state_classification.onnx"),
@@ -25,13 +22,6 @@ REQUIRED_MODEL_FILES = (
     ("hrnet", "hrnet.onnx"),
     ("retinaface", "retinaface.onnx"),
 )
-
-
-class ModelFilesStatus(Enum):
-    MISSING = "missing"
-    TIMEOUT = "timeout"
-    UP_TO_DATE = "up_to_date"
-    UPDATE_AVAILABLE = "update_available"
 
 
 class ModelFilesManager(QObject):
@@ -50,6 +40,9 @@ class ModelFilesManager(QObject):
         self.required_model_files = [self.repo_dir / Path(*parts) for parts in REQUIRED_MODEL_FILES]
         self.required_model_files.append(self.model_info_file)
 
+        self.revision = DEFAULT_REVISION
+        self.software_version = "v" + VERSION_FILE.read_text(encoding="utf-8").strip()
+
         self._is_downloading = False
         self._is_checking = False
 
@@ -65,7 +58,13 @@ class ModelFilesManager(QObject):
     def get_remote_model_info(self, timeout_s=10.0):
         try:
             api = HubApi(timeout=timeout_s)
-            return api.get_model(MODEL_ID), "empty", ""
+            branches, tags = api.get_model_branches_and_tags(MODEL_ID)
+            revisions = branches + tags
+            if self.software_version in revisions:
+                self.revision = self.software_version
+            repo_commits = api.list_repo_commits(MODEL_ID, revision=self.revision)
+            last_updated_time = repo_commits.commits[0].created_at.timestamp()
+            return {"revision": self.revision, "LastUpdatedTime": last_updated_time}, "empty", ""
         except Timeout:
             return None, "connection_timed_out", ""
         except ConnectionError:
@@ -95,37 +94,16 @@ class ModelFilesManager(QObject):
 
             local_info = Helper.read_json(self.model_info_file, return_if_not_exists={})
 
-            if int(remote_info["LastUpdatedTime"]) > int(local_info["LastUpdatedTime"]):
-                status_key, button_enabled = self._resolve_status_for_software_version()
-                self._emit_status(status_key, "", button_enabled)
+            if local_info["revision"] != self.revision:
+                self._emit_status("update_available", "", True)
+            elif int(remote_info["LastUpdatedTime"]) > int(local_info["LastUpdatedTime"]):
+                self._emit_status("update_available", "", True)
             else:
                 self._emit_status("up_to_date", "", False)
         except Exception as exc:
             self._emit_status("request_model_info_failed", str(exc), False)
         finally:
             self._is_checking = False
-
-    def _resolve_status_for_software_version(self):
-        current_version = VERSION_FILE.read_text(encoding="utf-8").strip()
-
-        with tempfile.TemporaryDirectory(prefix="project_info_", dir=str(APP_DATA_LOCAL_PATH)) as tmp_dir:
-            project_info_path = model_file_download(
-                model_id=MODEL_ID,
-                file_path=PROJECT_INFO_FILE,
-                local_dir=tmp_dir,
-            )
-            project_info = Helper.read_json(Path(project_info_path), return_if_not_exists={})
-
-        min_version = project_info.get("minimum_software_version", "") or "0.0.0"
-        max_version = project_info.get("maximum_software_version", "") or "999.999.999"
-
-        if max_version and Helper.compare_versions(current_version, max_version) > 0:
-            return "development_version_has_no_model_files", False
-
-        if min_version and Helper.compare_versions(current_version, min_version) < 0:
-            return "software_update_required", False
-
-        return "update_available", True
 
     def start_download_or_update(self, timeout_s=10.0):
         if self._is_downloading:
@@ -148,6 +126,7 @@ class ModelFilesManager(QObject):
 
             snapshot_download(
                 model_id=MODEL_ID,
+                revision=self.revision,
                 local_dir=str(self.repo_dir.resolve()),
                 progress_callbacks=[self._build_file_progress_callback()],
             )
