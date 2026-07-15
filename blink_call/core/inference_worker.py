@@ -10,6 +10,7 @@ from blink_call.utils.helper import Helper
 class InferenceWorker(QThread):
     result_ready = Signal(dict)
     show_debug_msg = Signal(str)
+    eye_region_status = Signal(str)
 
     def __init__(self, home_model):
         super().__init__()
@@ -167,6 +168,13 @@ class InferenceWorker(QThread):
         self.latest_landmarks = (
             [[int(point[0]), int(point[1])] for point in result["landmarks"]] if result["landmarks"] else None
         )
+        if not self.latest_face_bbox:
+            status = "no_face"
+        elif not self.latest_landmarks:
+            status = "landmarks_error"
+        else:
+            status = "ok" if self.latest_eye_bbox else "error"
+        self.eye_region_status.emit(status)
         self.debug_info(f"[EyeRegionDetector] debug info: {result['debug_info']}", "eye_region")
 
         self.pending_bbox_future = None

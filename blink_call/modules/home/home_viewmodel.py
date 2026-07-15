@@ -22,7 +22,7 @@ class HomeViewModel(QObject):
     local_service_status = Signal(bool)
     blink_progress_updated = Signal(dict)
     blink_call_alert_visibility = Signal(bool)
-    model_files_hint = Signal(dict)
+    home_hint = Signal(dict)
     recording_state_changed = Signal(dict)
 
     debug_mode_state = Signal(bool)
@@ -43,6 +43,7 @@ class HomeViewModel(QObject):
         self.infer_worker = InferenceWorker(self.model)
         self.infer_worker.result_ready.connect(self.on_infer_result)
         self.infer_worker.show_debug_msg.connect(self.on_infer_debug)
+        self.infer_worker.eye_region_status.connect(self.on_eye_region_status)
 
         self.timer = QTimer(self)
         self.timer.setInterval(20)
@@ -96,7 +97,7 @@ class HomeViewModel(QObject):
         )
 
         self.local_service_status.emit(False)
-        self.model_files_hint.emit({"visible": False, "text": ""})
+        self.home_hint.emit({"visible": False, "text": ""})
         self.recording_state_changed.emit({"active": False, "elapsed_s": 0, "total_s": 0})
         self.clear_debug_msg.emit()
         self.debug_mode_state.emit(self.debug_mode)
@@ -194,6 +195,15 @@ class HomeViewModel(QObject):
         if self.debug_mode:
             self.show_debug_msg.emit(text)
 
+    def on_eye_region_status(self, status):
+        key = {
+            "no_face": "face_not_detected_hint",
+            "landmarks_error": "face_landmarks_failed_hint",
+            "error": "blink_call_abnormal_hint",
+        }.get(status)
+        i18n = get_i18n(self.setting_vm.get_config("ui.language"))
+        self.home_hint.emit({"visible": key is not None, "text": i18n.get(key, "")})
+
     def on_listen_setting_popup(self, is_open: bool):
         self.setting_popup = is_open
 
@@ -203,7 +213,7 @@ class HomeViewModel(QObject):
 
         if not self.model_files_manager.all_model_files_exists():
             i18n = get_i18n(self.setting_vm.get_config("ui.language"))
-            self.model_files_hint.emit({"visible": True, "text": i18n["model_files_missing_hint"]})
+            self.home_hint.emit({"visible": True, "text": i18n["model_files_missing_hint"]})
             return
 
         if not self.infer_worker.isRunning():

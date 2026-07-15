@@ -81,31 +81,31 @@ class HomeView(QWidget):
         self.call_close_btn.setObjectName("homeCallCloseBtn")
         self.call_close_btn.clicked.connect(self.vm.stop_call_audio)
 
-        self.model_files_hint_box = QFrame(self)
-        self.model_files_hint_box.setObjectName("homeModelFilesHint")
-        self.model_files_hint_layout = QHBoxLayout(self.model_files_hint_box)
-        self.model_files_hint_layout.setContentsMargins(6, 6, 6, 6)
-        self.model_files_hint_layout.setSpacing(12)
+        self.home_hint_box = QFrame(self)
+        self.home_hint_box.setObjectName("homeModelFilesHint")
+        self.home_hint_layout = QHBoxLayout(self.home_hint_box)
+        self.home_hint_layout.setContentsMargins(6, 6, 6, 6)
+        self.home_hint_layout.setSpacing(12)
 
-        self.model_files_hint_icon = QLabel(self.model_files_hint_box)
-        self.model_files_hint_icon.setObjectName("homeModelFilesHintIcon")
-        self.model_files_hint_icon.setFixedSize(36, 36)
-        self.model_files_hint_icon.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
+        self.home_hint_icon = QLabel(self.home_hint_box)
+        self.home_hint_icon.setObjectName("homeModelFilesHintIcon")
+        self.home_hint_icon.setFixedSize(36, 36)
+        self.home_hint_icon.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
         warning_icon = QPixmap("assets/icons/warning.png").scaled(
             36,
             36,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
-        self.model_files_hint_icon.setPixmap(warning_icon)
+        self.home_hint_icon.setPixmap(warning_icon)
 
-        self.model_files_hint_text = QLabel("", self.model_files_hint_box)
-        self.model_files_hint_text.setObjectName("homeModelFilesHintText")
-        self.model_files_hint_text.setWordWrap(True)
+        self.home_hint_text = QLabel("", self.home_hint_box)
+        self.home_hint_text.setObjectName("homeModelFilesHintText")
+        self.home_hint_text.setWordWrap(True)
 
-        self.model_files_hint_layout.addWidget(self.model_files_hint_icon)
-        self.model_files_hint_layout.addWidget(self.model_files_hint_text, 1)
-        self.model_files_hint_box.hide()
+        self.home_hint_layout.addWidget(self.home_hint_icon)
+        self.home_hint_layout.addWidget(self.home_hint_text, 1)
+        self.home_hint_box.hide()
 
         self.is_setting_popup.connect(self.vm.on_listen_setting_popup)
         self.vm.frame_ready.connect(self.on_show_frame)
@@ -117,7 +117,7 @@ class HomeView(QWidget):
         self.vm.local_service_status.connect(self.on_set_service_mode)
         self.vm.blink_progress_updated.connect(self.on_blink_progress_updated)
         self.vm.blink_call_alert_visibility.connect(self.on_blink_call_alert_visibility)
-        self.vm.model_files_hint.connect(self.on_model_files_hint)
+        self.vm.home_hint.connect(self.on_home_hint)
         self.vm.recording_state_changed.connect(self.on_recording_state_changed)
 
         self.is_service_mode = False
@@ -205,12 +205,12 @@ class HomeView(QWidget):
         self.call_block_overlay.raise_()
         self.call_close_btn.raise_()
 
-    def on_model_files_hint(self, data: dict):
+    def on_home_hint(self, data: dict):
         visible = bool(data.get("visible"))
         text = str(data.get("text") or "")
-        self.model_files_hint_text.setText(text)
-        self.model_files_hint_box.setVisible(visible and bool(text))
-        self._position_model_files_hint()
+        self.home_hint_text.setText(text)
+        self.home_hint_box.setVisible(visible and bool(text))
+        self._position_home_hint()
 
     def on_recording_state_changed(self, data: dict):
         active = bool(data.get("active"))
@@ -234,7 +234,7 @@ class HomeView(QWidget):
         self._position_blink_progress_bar()
         self._position_recording_stop_btn()
         self._position_call_close_btn()
-        self._position_model_files_hint()
+        self._position_home_hint()
         self.call_block_overlay.setGeometry(0, 0, self.width(), self.height())
 
     def _position_exit_btn(self):
@@ -272,10 +272,10 @@ class HomeView(QWidget):
         y = int(self.height() * 0.62)
         self.call_close_btn.setGeometry(max(20, x), max(20, y), max(300, btn_width), max(140, btn_height))
 
-    def _position_model_files_hint(self):
+    def _position_home_hint(self):
         width = min(max(int(self.width() * 0.45), 400), 600)
         margin = 20
-        self.model_files_hint_box.setGeometry(
+        self.home_hint_box.setGeometry(
             margin,
             max(margin, self.height() - 96),
             width,
