@@ -1,4 +1,4 @@
 from .hrnet_onnx import HRNetONNX
-from .retinaface_onnx import RetinaFaceONNX
+from .yolov6_onnx import YOLOv6ONNX
 
-__all__ = ["RetinaFaceONNX", "HRNetONNX"]
+__all__ = ["YOLOv6ONNX", "HRNetONNX"]

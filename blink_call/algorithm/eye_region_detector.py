@@ -4,33 +4,34 @@ from pathlib import Path
 import numpy as np
 from PySide6.QtCore import QStandardPaths
 
-from blink_call.algorithm.inference import HRNetONNX, RetinaFaceONNX
+from blink_call.algorithm.inference import HRNetONNX, YOLOv6ONNX
 from blink_call.utils.helper import Helper
 
 APP_MODEL_ROOT = (
     Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "blink_call" / "blink_call_model_files"
 )
+DEFAULT_YOLOV6_ONNX_PATH = APP_MODEL_ROOT / "yolov6" / "yolov6.onnx"
 
 
 class EyeRegionDetector:
     """
     Two-stage eye-region detector:
-        1. local RetinaFace ONNX for face detection
+        1. fine-tuned YOLOv6-lite ONNX for face detection
         2. local HRNet ONNX for landmark detection
     """
 
     def __init__(self, configs):
-        self.retina_onnx_path = str(configs.get("retina_onnx_path", APP_MODEL_ROOT / "retinaface" / "retinaface.onnx"))
+        self.yolov6_onnx_path = str(configs.get("yolov6_onnx_path", DEFAULT_YOLOV6_ONNX_PATH))
         self.hrnet_onnx_path = str(configs.get("hrnet_onnx_path", APP_MODEL_ROOT / "hrnet" / "hrnet.onnx"))
 
-        self.face_detector = RetinaFaceONNX(
-            onnx_path=self.retina_onnx_path,
+        self.face_detector = YOLOv6ONNX(
+            onnx_path=self.yolov6_onnx_path,
             input_size=tuple(configs.get("det_size", (640, 640))),
             ctx_id=int(configs.get("ctx_id", -1)),
             score_thresh=float(configs.get("det_thresh", 0.3)),
-            nms_thresh=float(configs.get("det_nms_thresh", 0.3)),
-            cls_is_score=bool(configs.get("retina_cls_is_score", True)),
-            bgr_to_rgb=bool(configs.get("retina_bgr_to_rgb", True)),
+            nms_thresh=float(configs.get("det_nms_thresh", 0.45)),
+            class_id=configs.get("yolov6_face_class_id", 0),
+            max_detections=int(configs.get("det_max_detections", 100)),
         )
 
         self.landmarker = HRNetONNX(
@@ -271,12 +272,12 @@ class EyeRegionDetector:
                 faces = self._detect_in_roi(frame, fallback_roi)
                 detection_mode = "center_zoom"
         except Exception as exc:
-            return self._return_data(debug_info=f"retinaface onnx inference error: {exc}")
+            return self._return_data(debug_info=f"yolov6 onnx inference error: {exc}")
 
         if faces.shape[0] == 0:
             self.last_face_bbox = None
-            retina_debug = getattr(self.face_detector, "last_debug_info", "")
-            return self._return_data(debug_info=f"no face detected; {retina_debug}")
+            detector_debug = getattr(self.face_detector, "last_debug_info", "")
+            return self._return_data(debug_info=f"no face detected; {detector_debug}")
 
         face = faces[np.argmax(faces[:, 4])]
         face_bbox = face[:4].tolist()
@@ -308,11 +309,11 @@ class EyeRegionDetector:
         except Exception as exc:
             return self._return_data(debug_info=f"eye selection error: {exc}")
 
-        # Keep the RetinaFace box as the face-box result and tracking input.
+        # Keep the YOLOv6 box as the face-box result and tracking input.
         # HRNet landmarks are a downstream result and must not redefine it.
         self.last_face_bbox = face_bbox
 
-        retina_debug = getattr(self.face_detector, "last_debug_info", "")
+        detector_debug = getattr(self.face_detector, "last_debug_info", "")
         debug_info = (
             f"select {selected_eye} eye: "
             f"left_score={eye_score_info['left_score']:.3f}, "
@@ -332,7 +333,7 @@ class EyeRegionDetector:
             f"det_ms={(t1 - t0) * 1000.0:.1f}, "
             f"lmk_ms={(t2 - t1) * 1000.0:.1f}, "
             f"total_ms={(time.perf_counter() - t0) * 1000.0:.1f}, "
-            f"{retina_debug}"
+            f"{detector_debug}"
         )
 
         return self._return_data(

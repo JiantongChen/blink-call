@@ -75,7 +75,7 @@
 
 本仓库不负责模型训练与 ONNX 模型文件替换。相关模型的离线训练资源可在以下仓库中获取：
 
-- 人脸检测：[Retinaface](https://github.com/xxlin123/Retinaface)
+- 人脸检测：[YOLOv6](https://github.com/meituan/YOLOv6)
 - 2D 人脸 98 关键点检测：[HRNet](https://github.com/xxlin123/HRNet)
 - 眼睛状态分类：[ViTA](https://github.com/Ole7755/ViTA)
 

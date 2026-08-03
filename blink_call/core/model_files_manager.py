@@ -20,7 +20,7 @@ REQUIRED_MODEL_FILES = (
     ("ViTA", "eye_state_classification.onnx"),
     ("ViTA", "eye_state_classification.json"),
     ("hrnet", "hrnet.onnx"),
-    ("retinaface", "retinaface.onnx"),
+    ("yolov6", "yolov6.onnx"),
 )
 
 
