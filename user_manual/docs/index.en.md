@@ -22,7 +22,7 @@ Choose any one of the following download options:
 
 - [Baidu Netdisk](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
 - [Quark Netdisk](https://pan.quark.cn/s/e96254bb1153)
-- [GitHub](https://github.com/JiantongChen/blink-call/releases/latest)
+- [GitHub](https://github.com/JouleEmbodiedAILab/blink-call/releases/latest)
 
 Download the latest software package, extract it to any folder, and double-click `BlinkCall.exe` in the extracted folder to launch the software.
 

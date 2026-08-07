@@ -45,4 +45,4 @@ class GeneralController:
 
     @staticmethod
     def open_user_manual():
-        QDesktopServices.openUrl(QUrl("https://jiantongchen.github.io/blink-call/"))
+        QDesktopServices.openUrl(QUrl("https://JouleEmbodiedAILab.github.io/blink-call/"))

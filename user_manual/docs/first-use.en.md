@@ -8,17 +8,17 @@ Download the latest software package from one of the download links, then extrac
 
 Do not run the software directly inside the compressed package. Extract it first, then open it.
 
-![zip](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/zip.jpg)
+![zip](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/zip.jpg)
 
 ## Open the Software
 
 Open the extracted software folder and double-click `BlinkCall.exe`.
 
-![app](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/app.jpg)
+![app](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/app.jpg)
 
 After the software opens, the main screen shows the camera view and the top blink progress bar.
 
-![Main window](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/home-main-window.jpg)
+![Main window](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/home-main-window.jpg)
 
 ## Download or Update Model Files
 
@@ -30,7 +30,7 @@ Settings -> Blink Call -> Download/Update Model Files.
 
 Click [Download/Update] and wait for the download to finish. After it finishes, save the settings and return to the main screen.
 
-![Download model files](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-download-model.gif)
+![Download model files](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/quick-start-download-model.gif)
 
 ## Allow Camera Access
 
@@ -38,7 +38,7 @@ If the system asks for camera permission, allow the software to access the camer
 
 If no permission window appears, continue to the next step.
 
-![authority](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/authority.jpg)
+![authority](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/authority.jpg)
 
 ## Select the Camera
 
@@ -46,7 +46,7 @@ By default, the software uses the local camera.
 
 If the computer has multiple cameras connected, you can adjust the camera number in Settings.
 
-![Select camera](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/camera-settings.jpg)
+![Select camera](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/camera-settings.jpg)
 
 ## Adjust the Patient and Camera Position
 
@@ -62,8 +62,8 @@ After the call is triggered, the software will play an alert sound. After confir
 
 During the test, watch the progress bar at the top to see the current action progress.
 
-![Blink call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.gif)
+![Blink call](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/quick-start-call-alert.gif)
 
 To stop the alert early, click the stop button on the call alert screen.
 
-![Stop call](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/quick-start-call-alert.jpg)
+![Stop call](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/quick-start-call-alert.jpg)

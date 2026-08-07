@@ -31,10 +31,10 @@
 如果你希望立刻使用软件，请从这里开始：
 
 - 📦 你可以从以下任意一个地址下载**最新版本的软件**：
-  - [GitHub Latest Release](https://github.com/JiantongChen/blink-call/releases/latest)
+  - [GitHub Latest Release](https://github.com/JouleEmbodiedAILab/blink-call/releases/latest)
   - [百度网盘](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
   - [夸克网盘](https://pan.quark.cn/s/e96254bb1153)
-- 📖 **用户指南**：[在线用户手册](https://jiantongchen.github.io/blink-call/)
+- 📖 **用户指南**：[在线用户手册](https://JouleEmbodiedAILab.github.io/blink-call/)
 
 > [!NOTE]
 > 当前仅有 Windows 操作系统的软件可直接下载并使用。
@@ -47,7 +47,7 @@
 ### 🚀 快速安装与启动
 - 步骤一: 克隆本仓库至本地
   ```bash
-  git clone https://github.com/JiantongChen/blink-call.git
+  git clone https://github.com/JouleEmbodiedAILab/blink-call.git
   cd blink-call
   ```
 - 步骤二: 安装Python依赖环境
@@ -95,7 +95,7 @@
 
 ### 📚 在线用户手册更新
 
-若要更新 [在线用户手册](https://jiantongchen.github.io/blink-call/)：
+若要更新 [在线用户手册](https://JouleEmbodiedAILab.github.io/blink-call/)：
 
 请在 `user_manual/` 目录下编辑`mkdocs.yml`及对应的 `docs/*.md` 文件内容。
 

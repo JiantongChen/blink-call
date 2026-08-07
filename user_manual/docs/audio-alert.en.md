@@ -19,7 +19,7 @@ If the software is used for daily calling, it is recommended to keep this enable
 You can choose different ringtones under [Call Audio File].
 
 ## Blink Sequence Step Prompt Sound
-![提示音](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/blink_sound.gif)
+![提示音](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/blink_sound.gif)
 In [Blink Sequence], each action step can have [Sound Prompt] enabled or disabled.
 
 When enabled, the software plays one short prompt sound after the patient completes the current eye-open or eye-closed step. This tells the patient that the current step is complete and they can continue with the next action.
@@ -44,4 +44,4 @@ You can set how long the sound plays after a call is triggered.
 
 If you want the alert to continue until a family member manually stops it, choose [Infinite].
 
-![Set playback duration](https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/audio-alert-settings.jpg)
+![Set playback duration](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/audio-alert-settings.jpg)

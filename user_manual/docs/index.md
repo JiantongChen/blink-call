@@ -23,7 +23,7 @@
 
 - [百度网盘](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
 - [夸克网盘](https://pan.quark.cn/s/e96254bb1153)
-- [GitHub](https://github.com/JiantongChen/blink-call/releases/latest)
+- [GitHub](https://github.com/JouleEmbodiedAILab/blink-call/releases/latest)
 
 下载最新版本的软件压缩包，并解压至任意目录后，双击打开文件夹内名为 `BlinkCall.exe` 的软件即可。
 

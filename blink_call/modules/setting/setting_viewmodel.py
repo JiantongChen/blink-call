@@ -8,7 +8,7 @@ from PySide6.QtCore import QObject, QStandardPaths, Signal
 from blink_call.modules.setting.setting_model import SettingModel
 from blink_call.utils.helper import Helper
 
-LATEST_RELEASE_API = "https://api.github.com/repos/JiantongChen/blink-call/releases/latest"
+LATEST_RELEASE_API = "https://api.github.com/repos/JouleEmbodiedAILab/blink-call/releases/latest"
 VERSION_FILE = Path(__file__).resolve().parents[3] / "VERSION"
 APP_DATA_ROOT = Path(QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)) / "blink_call"
 

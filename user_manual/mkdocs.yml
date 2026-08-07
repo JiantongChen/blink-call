@@ -1,5 +1,5 @@
 ﻿site_name: Blink Call Manual
-site_url: https://jiantongchen.github.io/blink-call/
+site_url: https://JouleEmbodiedAILab.github.io/blink-call/
 use_directory_urls: true
 site_description: User manual for offline distributed Blink Call software
 hooks:

@@ -31,10 +31,10 @@
 If you want to get started quickly, begin here:
 
 - 📦 You can download **the latest version of the software** from:
-  - [GitHub Latest Release](https://github.com/JiantongChen/blink-call/releases/latest)
+  - [GitHub Latest Release](https://github.com/JouleEmbodiedAILab/blink-call/releases/latest)
   - [Baidu Netdisk](https://pan.baidu.com/s/1Og8-TmnR_yIdsOA2_MHyiw?pwd=fk35)
   - [Quark Netdisk](https://pan.quark.cn/s/e96254bb1153)
-- 📖 **User Guide**: [Online User Manual](https://jiantongchen.github.io/blink-call/)
+- 📖 **User Guide**: [Online User Manual](https://JouleEmbodiedAILab.github.io/blink-call/)
 
 > [!NOTE]
 > Currently, the software is only available for direct download and use on Windows.
@@ -47,7 +47,7 @@ This project includes developer documentation and setup guidance to help you get
 ### 🚀 Quick Setup & Launch
 - Step 1: Clone the Repository
   ```bash
-  git clone https://github.com/JiantongChen/blink-call.git
+  git clone https://github.com/JouleEmbodiedAILab/blink-call.git
   cd blink-call
   ```
 - Step 2: Setup Conda Environment and Dependencies
@@ -95,7 +95,7 @@ After development is completed, the software can be built with Nuitka for standa
 
 ### 📚 Docs Update
 
-To update the [online user manual](https://jiantongchen.github.io/blink-call/):
+To update the [online user manual](https://JouleEmbodiedAILab.github.io/blink-call/):
 
 Please edit the contents of `mkdocs.yml` and the corresponding `docs/*.md` files in the `user_manual/` directory.
 
