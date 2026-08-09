@@ -61,18 +61,6 @@ class EyeRegionDetector:
         self.tracking_roi_scale = float(configs.get("tracking_roi_scale", 3.0))
         self.fallback_crop_ratio = float(configs.get("fallback_crop_ratio", 0.65))
 
-        self.eye_switch_margin = float(configs.get("eye_switch_margin", 0.08))
-        self.eye_switch_confirm_frames = int(configs.get("eye_switch_confirm_frames", 5))
-        self.eye_near_weight = float(configs.get("eye_near_weight", 0.25))
-        self.eye_pose_deadzone = float(configs.get("eye_pose_deadzone", 0.03))
-        self.eye_pose_full_scale = float(configs.get("eye_pose_full_scale", 0.22))
-        self.eye_bad_score_thresh = float(configs.get("eye_bad_score_thresh", 0.65))
-        self.eye_bad_confirm_frames = int(configs.get("eye_bad_confirm_frames", 3))
-        self.locked_eye = None
-        self.switch_candidate = None
-        self.switch_count = 0
-        self.bad_count = 0
-
         self.last_face_bbox = None
 
     @staticmethod
@@ -132,132 +120,15 @@ class EyeRegionDetector:
             return clipped_faces.copy()
         return candidate.copy()
 
-    @staticmethod
-    def _eye_score(landmark_scores, indices):
+    def _select_eye_by_confidence(self, landmark_scores):
         if landmark_scores is None:
-            return {"score": 1.0, "mean": 1.0, "min": 1.0}
-
-        scores = np.asarray(landmark_scores[indices], dtype=np.float32)
-        if scores.size == 0:
-            return {"score": 0.0, "mean": 0.0, "min": 0.0}
-
-        mean_score = float(np.mean(scores))
-        min_score = float(np.min(scores))
-        return {"score": 0.8 * mean_score + 0.2 * min_score, "mean": mean_score, "min": min_score}
-
-    @staticmethod
-    def _points_center(landmarks, indices):
-        points = np.asarray(landmarks[indices], dtype=np.float32)
-        if points.size == 0:
-            return np.array([0.0, 0.0], dtype=np.float32)
-        return np.mean(points, axis=0)
-
-    def _eye_pose_nearness(self, landmarks):
-        left_center = self._points_center(landmarks, self.eye_indices["left"])
-        right_center = self._points_center(landmarks, self.eye_indices["right"])
-        eye_mid_x = 0.5 * (float(left_center[0]) + float(right_center[0]))
-        eye_distance = max(1.0, abs(float(left_center[0]) - float(right_center[0])))
-
-        if len(landmarks) >= 60:
-            nose_center = self._points_center(landmarks, list(range(55, 60)))
-        elif len(landmarks) >= 55:
-            nose_center = self._points_center(landmarks, list(range(51, 55)))
+            left_score = right_score = 1.0
         else:
-            nose_center = np.array([eye_mid_x, 0.0], dtype=np.float32)
+            left_score = float(np.mean(landmark_scores[self.eye_indices["left"]]))
+            right_score = float(np.mean(landmark_scores[self.eye_indices["right"]]))
 
-        yaw_signal = (float(nose_center[0]) - eye_mid_x) / eye_distance
-        pose_strength = max(0.0, abs(yaw_signal) - self.eye_pose_deadzone)
-        pose_strength = min(1.0, pose_strength / max(self.eye_pose_full_scale, 1e-6))
-
-        left_label_is_image_left = float(left_center[0]) <= float(right_center[0])
-        near_image_left = yaw_signal > self.eye_pose_deadzone
-        near_label = None
-        if pose_strength > 0.0:
-            if near_image_left:
-                near_label = "left" if left_label_is_image_left else "right"
-            else:
-                near_label = "right" if left_label_is_image_left else "left"
-
-        left_near_ratio = 0.5
-        right_near_ratio = 0.5
-        if near_label == "left":
-            left_near_ratio = 0.5 + 0.5 * pose_strength
-            right_near_ratio = 1.0 - left_near_ratio
-        elif near_label == "right":
-            right_near_ratio = 0.5 + 0.5 * pose_strength
-            left_near_ratio = 1.0 - right_near_ratio
-
-        return left_near_ratio, right_near_ratio, yaw_signal, near_label or "front"
-
-    def _select_stable_eye(self, landmarks, landmark_scores):
-        left = self._eye_score(landmark_scores, self.eye_indices["left"])
-        right = self._eye_score(landmark_scores, self.eye_indices["right"])
-
-        left_near_ratio, right_near_ratio, yaw_signal, near_label = self._eye_pose_nearness(landmarks)
-
-        left_total = left["score"] + self.eye_near_weight * left_near_ratio
-        right_total = right["score"] + self.eye_near_weight * right_near_ratio
-        scores = {
-            "left": {**left, "near": left_near_ratio, "total": left_total},
-            "right": {**right, "near": right_near_ratio, "total": right_total},
-        }
-
-        if self.locked_eye is None:
-            self.locked_eye = "left" if left_total >= right_total else "right"
-            reason = "initial"
-        else:
-            reason = "locked"
-
-        current_eye = self.locked_eye
-        other_eye = "right" if current_eye == "left" else "left"
-        current_score = scores[current_eye]["total"]
-        other_score = scores[other_eye]["total"]
-        current_confidence = scores[current_eye]["score"]
-        other_confidence = scores[other_eye]["score"]
-
-        if current_confidence < self.eye_bad_score_thresh and other_score > current_score:
-            self.bad_count += 1
-        else:
-            self.bad_count = 0
-
-        score_gap = other_score - current_score
-        should_consider_switch = score_gap >= self.eye_switch_margin or self.bad_count >= self.eye_bad_confirm_frames
-
-        if should_consider_switch:
-            if self.switch_candidate == other_eye:
-                self.switch_count += 1
-            else:
-                self.switch_candidate = other_eye
-                self.switch_count = 1
-
-            if self.switch_count >= self.eye_switch_confirm_frames:
-                self.locked_eye = other_eye
-                self.switch_candidate = None
-                self.switch_count = 0
-                self.bad_count = 0
-                reason = "switch_confirmed"
-            else:
-                reason = f"switch_pending_{self.switch_count}/{self.eye_switch_confirm_frames}"
-        else:
-            self.switch_candidate = None
-            self.switch_count = 0
-
-        return self.locked_eye, {
-            "left_score": left["score"],
-            "right_score": right["score"],
-            "left_total": left_total,
-            "right_total": right_total,
-            "left_near": left_near_ratio,
-            "right_near": right_near_ratio,
-            "yaw_signal": yaw_signal,
-            "near_label": near_label,
-            "left_mean": left["mean"],
-            "right_mean": right["mean"],
-            "left_min": left["min"],
-            "right_min": right["min"],
-            "score_gap": scores["right"]["total"] - scores["left"]["total"],
-            "reason": reason,
-        }
+        selected_eye = "left" if left_score >= right_score else "right"
+        return selected_eye, left_score, right_score
 
     def detect(self, frame):
         if frame is None:
@@ -321,7 +192,7 @@ class EyeRegionDetector:
         # 3. Select eye area
         t2 = time.perf_counter()
         try:
-            selected_eye, eye_score_info = self._select_stable_eye(landmarks, landmark_scores)
+            selected_eye, left_score, right_score = self._select_eye_by_confidence(landmark_scores)
             selected_points = landmarks[self.eye_indices[selected_eye]]
 
             face_width = max(2.0, face_bbox[2] - face_bbox[0])
@@ -341,19 +212,8 @@ class EyeRegionDetector:
         detector_debug = getattr(self.face_detector, "last_debug_info", "")
         debug_info = (
             f"select {selected_eye} eye: "
-            f"left_score={eye_score_info['left_score']:.3f}, "
-            f"right_score={eye_score_info['right_score']:.3f}, "
-            f"left_near={eye_score_info['left_near']:.3f}, "
-            f"right_near={eye_score_info['right_near']:.3f}, "
-            f"left_total={eye_score_info['left_total']:.3f}, "
-            f"right_total={eye_score_info['right_total']:.3f}, "
-            f"yaw_signal={eye_score_info['yaw_signal']:.3f}, "
-            f"near_label={eye_score_info['near_label']}, "
-            f"left_min={eye_score_info['left_min']:.3f}, "
-            f"right_min={eye_score_info['right_min']:.3f}, "
-            f"score_gap={eye_score_info['score_gap']:.3f}, "
-            f"reason={eye_score_info['reason']}, "
-            f"switch_count={self.switch_count}, bad_count={self.bad_count}, "
+            f"left_score={left_score:.3f}, "
+            f"right_score={right_score:.3f}, "
             f"mode={detection_mode}, "
             f"tracking_roi_enabled={self.enable_tracking_roi}, "
             f"center_zoom_enabled={self.enable_center_zoom}, "
