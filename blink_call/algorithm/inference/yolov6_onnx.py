@@ -17,7 +17,7 @@ class YOLOv6ONNX:
         onnx_path,
         input_size=(640, 640),
         ctx_id=0,
-        score_thresh=0.3,
+        score_thresh=0.65,
         nms_thresh=0.45,
         class_id=0,
         max_detections=100,
