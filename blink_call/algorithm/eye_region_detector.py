@@ -53,6 +53,26 @@ class EyeRegionDetector:
         self.eye_padding_ratio = float(configs.get("eye_padding_ratio", 0.06))
         self.min_eye_padding = int(configs.get("min_eye_padding", 4))
 
+        # Validate an eye's eight WFLW landmarks before min/max turns them into
+        # a bbox. These ratios use the longer face-box side, so they remain
+        # valid for upright, tilted, and side-lying faces.
+        self.eye_min_diameter_ratio = max(
+            0.0,
+            float(configs.get("eye_min_diameter_ratio", 0.02)),
+        )
+        self.eye_max_diameter_ratio = max(
+            self.eye_min_diameter_ratio,
+            float(configs.get("eye_max_diameter_ratio", 0.30)),
+        )
+        self.eye_max_edge_ratio = max(
+            0.01,
+            float(configs.get("eye_max_edge_ratio", 0.12)),
+        )
+        self.eye_center_face_margin_ratio = max(
+            0.0,
+            float(configs.get("eye_center_face_margin_ratio", 0.15)),
+        )
+
         # Start with full-frame detection, then use the previous face position
         # and a centered fallback to avoid running a full YOLO pass on every
         # frame once tracking has been established.
@@ -130,6 +150,87 @@ class EyeRegionDetector:
         selected_eye = "left" if left_score >= right_score else "right"
         return selected_eye, left_score, right_score
 
+    def _validate_eye_points(self, points, face_bbox):
+        """Validate one eye ring without assuming that the face is upright."""
+        points = np.asarray(points, dtype=np.float32)
+        metrics = {
+            "diameter_ratio": float("nan"),
+            "max_edge_ratio": float("nan"),
+        }
+
+        if points.shape != (8, 2):
+            return False, "invalid_shape", metrics
+        if not np.all(np.isfinite(points)):
+            return False, "non_finite", metrics
+
+        x1, y1, x2, y2 = map(float, face_bbox)
+        face_left, face_right = sorted((x1, x2))
+        face_top, face_bottom = sorted((y1, y2))
+        face_width = max(2.0, face_right - face_left)
+        face_height = max(2.0, face_bottom - face_top)
+        face_scale = max(face_width, face_height)
+
+        pairwise = points[:, None, :] - points[None, :, :]
+        diameter = float(np.max(np.linalg.norm(pairwise, axis=2)))
+        ring_edges = np.roll(points, -1, axis=0) - points
+        max_edge = float(np.max(np.linalg.norm(ring_edges, axis=1)))
+        diameter_ratio = diameter / face_scale
+        max_edge_ratio = max_edge / face_scale
+        metrics = {
+            "diameter_ratio": diameter_ratio,
+            "max_edge_ratio": max_edge_ratio,
+        }
+
+        if diameter_ratio < self.eye_min_diameter_ratio:
+            return False, "diameter_too_small", metrics
+        if diameter_ratio > self.eye_max_diameter_ratio:
+            return False, "diameter_too_large", metrics
+        if max_edge_ratio > self.eye_max_edge_ratio:
+            return False, "edge_too_large", metrics
+
+        # Median prevents one outlying point from pulling the group center.
+        center = np.median(points, axis=0)
+        margin_x = face_width * self.eye_center_face_margin_ratio
+        margin_y = face_height * self.eye_center_face_margin_ratio
+        if not (
+            face_left - margin_x <= float(center[0]) <= face_right + margin_x
+            and face_top - margin_y <= float(center[1]) <= face_bottom + margin_y
+        ):
+            return False, "center_outside_face", metrics
+
+        return True, "valid", metrics
+
+    def _build_eye_candidate(self, landmarks, eye_label, face_bbox, frame_shape, padding):
+        points = np.asarray(landmarks[self.eye_indices[eye_label]], dtype=np.float32)
+        valid, reason, metrics = self._validate_eye_points(points, face_bbox)
+        bbox = None
+        if valid:
+            bbox = Helper.points_to_bbox(points, frame_shape, padding=padding)
+        return {
+            "bbox": bbox,
+            "valid": valid,
+            "reason": reason,
+            **metrics,
+        }
+
+    @staticmethod
+    def _choose_geometry_valid_eye(requested_eye, candidates):
+        requested = candidates[requested_eye]
+        if requested["valid"]:
+            return requested_eye, requested["bbox"], "requested_valid"
+
+        other_eye = "right" if requested_eye == "left" else "left"
+        other = candidates[other_eye]
+        if other["valid"]:
+            reason = f"fallback_to_{other_eye}:{requested_eye}_{requested['reason']}"
+            return other_eye, other["bbox"], reason
+
+        reason = (
+            f"reject_both:left_{candidates['left']['reason']},"
+            f"right_{candidates['right']['reason']}"
+        )
+        return None, None, reason
+
     def detect(self, frame):
         if frame is None:
             return self._return_data(debug_info="frame is None")
@@ -192,8 +293,7 @@ class EyeRegionDetector:
         # 3. Select eye area
         t2 = time.perf_counter()
         try:
-            selected_eye, left_score, right_score = self._select_eye_by_confidence(landmark_scores)
-            selected_points = landmarks[self.eye_indices[selected_eye]]
+            requested_eye, left_score, right_score = self._select_eye_by_confidence(landmark_scores)
 
             face_width = max(2.0, face_bbox[2] - face_bbox[0])
             adaptive_padding = int(round(face_width * self.eye_padding_ratio))
@@ -201,7 +301,20 @@ class EyeRegionDetector:
                 self.min_eye_padding,
                 min(self.eye_padding, adaptive_padding),
             )
-            eye_bbox = Helper.points_to_bbox(selected_points, frame.shape, padding=adaptive_padding)
+            eye_candidates = {
+                eye_label: self._build_eye_candidate(
+                    landmarks,
+                    eye_label,
+                    landmark_face_bbox,
+                    frame.shape,
+                    adaptive_padding,
+                )
+                for eye_label in ("left", "right")
+            }
+            selected_eye, eye_bbox, eye_geometry_reason = self._choose_geometry_valid_eye(
+                requested_eye,
+                eye_candidates,
+            )
         except Exception as exc:
             return self._return_data(debug_info=f"eye selection error: {exc}")
 
@@ -210,10 +323,18 @@ class EyeRegionDetector:
         self.last_face_bbox = face_bbox
 
         detector_debug = getattr(self.face_detector, "last_debug_info", "")
+        left_geometry = eye_candidates["left"]
+        right_geometry = eye_candidates["right"]
         debug_info = (
-            f"select {selected_eye} eye: "
+            f"select {selected_eye or 'none'} eye: "
+            f"requested_eye={requested_eye}, "
             f"left_score={left_score:.3f}, "
             f"right_score={right_score:.3f}, "
+            f"geometry={eye_geometry_reason}, "
+            f"left_geometry={left_geometry['reason']}"
+            f"(diameter={left_geometry['diameter_ratio']:.3f},edge={left_geometry['max_edge_ratio']:.3f}), "
+            f"right_geometry={right_geometry['reason']}"
+            f"(diameter={right_geometry['diameter_ratio']:.3f},edge={right_geometry['max_edge_ratio']:.3f}), "
             f"mode={detection_mode}, "
             f"tracking_roi_enabled={self.enable_tracking_roi}, "
             f"center_zoom_enabled={self.enable_center_zoom}, "
