@@ -41,7 +41,7 @@ class EyeRegionDetector:
             output_type=str(configs.get("hrnet_output_type", "auto")),
             norm_type=str(configs.get("hrnet_norm_type", "imagenet")),
             coords_are_normalized=bool(configs.get("hrnet_coords_are_normalized", False)),
-            face_expand_ratio=float(configs.get("face_expand_ratio", 1.25)),
+            face_expand_ratio=float(configs.get("face_expand_ratio", 1.0)),
         )
 
         # landmark indices: https://wywu.github.io/projects/LAB/WFLW.html

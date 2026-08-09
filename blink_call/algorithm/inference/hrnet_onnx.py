@@ -24,7 +24,7 @@ class HRNetONNX:
         output_type="auto",
         norm_type="imagenet",
         coords_are_normalized=False,
-        face_expand_ratio=1.25,
+        face_expand_ratio=1.0,
     ):
         self.onnx_path = str(onnx_path)
         self.input_size = tuple(input_size)  # (w, h)
