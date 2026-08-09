@@ -23,12 +23,16 @@ class YOLOv6ONNX:
         max_detections=100,
     ):
         self.onnx_path = str(onnx_path)
-        self.input_size = tuple(input_size)  # (width, height)
+        self.configured_input_size = tuple(input_size)  # (width, height)
+        self.input_size = self.configured_input_size
+        self.static_model_input_size = None
+        self.input_size_overridden = False
         self.score_thresh = float(score_thresh)
         self.nms_thresh = float(nms_thresh)
         self.class_id = None if class_id is None else int(class_id)
         self.max_detections = int(max_detections)
         self.last_debug_info = ""
+        self.last_unclipped_detections = np.zeros((0, 5), dtype=np.float32)
 
         self.session = Helper.create_ort_session(self.onnx_path, ctx_id)
         model_input = self.session.get_inputs()[0]
@@ -42,18 +46,25 @@ class YOLOv6ONNX:
         if len(shape) != 4:
             raise RuntimeError(f"YOLOv6 expects a 4-D NCHW input, got {shape}")
         height, width = shape[2], shape[3]
-        if isinstance(height, int) and isinstance(width, int):
-            self.input_size = (width, height)
+        if isinstance(height, (int, np.integer)) and isinstance(width, (int, np.integer)):
+            self.static_model_input_size = (int(width), int(height))
+            self.input_size = self.static_model_input_size
+            self.input_size_overridden = self.input_size != self.configured_input_size
 
     def _set_debug_info(self, **extra):
         values = {
             "yolov6_path": self.onnx_path,
+            "configured_input_size": self.configured_input_size,
             "input_size": self.input_size,
             "outputs": self.output_names,
             "class_id": self.class_id,
             "score_thresh": self.score_thresh,
-            **extra,
         }
+        if self.input_size_overridden:
+            values["input_size_override"] = (
+                f"{self.configured_input_size}->{self.input_size} (static ONNX)"
+            )
+        values.update(extra)
         self.last_debug_info = ", ".join(f"{key}={value}" for key, value in values.items())
 
     def preprocess(self, image):
@@ -197,6 +208,13 @@ class YOLOv6ONNX:
 
         boxes[:, [0, 2]] = (boxes[:, [0, 2]] - meta["pad_x"]) / meta["scale"]
         boxes[:, [1, 3]] = (boxes[:, [1, 3]] - meta["pad_y"]) / meta["scale"]
+
+        # Keep the detector's full predicted box for HRNet center/scale.  The
+        # public detections below remain clipped for drawing/tracking, while an
+        # edge face can still use the same square + black-padding semantics as
+        # offline landmark inference.
+        unclipped_boxes = boxes.copy()
+        self.last_unclipped_detections = np.column_stack((unclipped_boxes, scores)).astype(np.float32)
         boxes[:, [0, 2]] = np.clip(boxes[:, [0, 2]], 0, meta["original_width"] - 1)
         boxes[:, [1, 3]] = np.clip(boxes[:, [1, 3]], 0, meta["original_height"] - 1)
 

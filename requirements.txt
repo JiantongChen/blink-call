@@ -9,5 +9,6 @@ modelscope
 nuitka
 onnxruntime
 opencv-python
+Pillow
 pre_commit
 PySide6

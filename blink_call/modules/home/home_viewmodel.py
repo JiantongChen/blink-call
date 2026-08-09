@@ -65,6 +65,9 @@ class HomeViewModel(QObject):
     def _initialize_vars(self):
         self.debug_mode = bool(self.setting_vm.get_config("debug_mode"))
         self.latest_infer_result = None
+        self.latest_annotated_infer_frame = None
+        self.latest_annotated_infer_timestamp_ms = 0
+        self.latest_annotated_infer_ttl_ms = 500
 
         self.stat_fps_interval = 10.0
         self.ui_fps_window_start = time.perf_counter()
@@ -146,11 +149,15 @@ class HomeViewModel(QObject):
                 self.ui_fps_counter = 0
 
             if (
-                isinstance(self.latest_infer_result, dict)
-                and int(time.time() * 1000) - self.latest_infer_result["timestamp_ms"] < 3000
+                self.latest_annotated_infer_frame is not None
+                and int(time.time() * 1000) - self.latest_annotated_infer_timestamp_ms
+                < self.latest_annotated_infer_ttl_ms
                 and not self.is_recording_mode
             ):
-                frame = draw_debug(frame, self.latest_infer_result)
+                # The cached image is the exact frame used by YOLOv6 + HRNet.
+                # Drawing old coordinates onto this newly read live frame was
+                # a visible source of landmark jitter.
+                frame = self.latest_annotated_infer_frame
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
@@ -177,7 +184,22 @@ class HomeViewModel(QObject):
             self.emit_show_camera_status("service_started_failed")
 
     def on_infer_result(self, result):
+        source_frame = None
+        if self.debug_mode:
+            source_frame = self.infer_worker.get_debug_frame(int(result.get("timestamp_ms", 0)))
         self.latest_infer_result = result
+        if self.debug_mode and source_frame is not None:
+            self.latest_annotated_infer_frame = draw_debug(source_frame, self.latest_infer_result)
+            self.latest_annotated_infer_timestamp_ms = int(result.get("timestamp_ms", 0))
+            inference_elapsed_ms = max(0.0, float(result.get("inference_elapsed_ms", 0.0)))
+            self.latest_annotated_infer_ttl_ms = min(
+                2000,
+                max(500, int(round(3.0 * inference_elapsed_ms))),
+            )
+        elif not self.debug_mode:
+            self.latest_annotated_infer_frame = None
+            self.latest_annotated_infer_timestamp_ms = 0
+
         self.blink_progress_updated.emit(
             {
                 "visibility": self.setting_vm.get_config("blink_call.enabled")
@@ -217,7 +239,10 @@ class HomeViewModel(QObject):
             return
 
         if not self.infer_worker.isRunning():
-            self.infer_worker.initialize_vars(self.setting_vm.get_config("blink_call"))
+            self.infer_worker.initialize_vars(
+                self.setting_vm.get_config("blink_call"),
+                include_debug_frame=self.debug_mode,
+            )
             self.infer_worker.start()
 
     def stop_infer_worker(self):

@@ -1,7 +1,15 @@
 import cv2
 
 
-def draw_debug(frame, info: dict, color=(42, 90, 255), eye_color=(80, 220, 120), landmark_step=1):
+def draw_debug(
+    frame,
+    info: dict,
+    color=(42, 90, 255),
+    eye_color=(80, 220, 120),
+    detector_eye_color=(0, 255, 255),
+    raw_face_color=(0, 165, 255),
+    landmark_step=1,
+):
     """
     Draw debug information (bbox + text) on the image
 
@@ -18,7 +26,9 @@ def draw_debug(frame, info: dict, color=(42, 90, 255), eye_color=(80, 220, 120),
     h, w = frame.shape[:2]
 
     face_bbox = info.get("debug_face_bbox_xyxy")
-    eye_bbox = info.get("debug_eye_bbox_xyxy")
+    raw_face_bbox = info.get("debug_raw_face_bbox_xyxy")
+    detector_eye_bbox = info.get("debug_detector_eye_bbox_xyxy")
+    classifier_eye_bbox = info.get("debug_eye_bbox_xyxy")
     landmarks = info.get("debug_landmarks")
 
     face_box = get_safe_bbox(face_bbox, w, h)
@@ -26,10 +36,50 @@ def draw_debug(frame, info: dict, color=(42, 90, 255), eye_color=(80, 220, 120),
         left, top, right, bottom = face_box
         cv2.rectangle(draw_frame, (left, top), (right, bottom), color, 2)
 
-    eye_box = get_safe_bbox(eye_bbox, w, h)
-    if eye_box is not None:
-        left, top, right, bottom = eye_box
+    raw_face_box = get_safe_bbox(raw_face_bbox, w, h)
+    if raw_face_box is not None and raw_face_box != face_box:
+        left, top, right, bottom = raw_face_box
+        cv2.rectangle(draw_frame, (left, top), (right, bottom), raw_face_color, 2)
+        cv2.putText(
+            draw_frame,
+            "raw face",
+            (left, max(14, top - 4)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            raw_face_color,
+            1,
+            cv2.LINE_AA,
+        )
+
+    detector_eye_box = get_safe_bbox(detector_eye_bbox, w, h)
+    if detector_eye_box is not None:
+        left, top, right, bottom = detector_eye_box
+        cv2.rectangle(draw_frame, (left, top), (right, bottom), detector_eye_color, 2)
+        cv2.putText(
+            draw_frame,
+            "detector eye",
+            (left, max(14, top - 4)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            detector_eye_color,
+            1,
+            cv2.LINE_AA,
+        )
+
+    classifier_eye_box = get_safe_bbox(classifier_eye_bbox, w, h)
+    if classifier_eye_box is not None:
+        left, top, right, bottom = classifier_eye_box
         cv2.rectangle(draw_frame, (left, top), (right, bottom), eye_color, 2)
+        cv2.putText(
+            draw_frame,
+            "classifier ROI",
+            (left, min(h - 4, bottom + 15)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            eye_color,
+            1,
+            cv2.LINE_AA,
+        )
 
     draw_landmarks(draw_frame, landmarks, w, h, color, landmark_step)
 

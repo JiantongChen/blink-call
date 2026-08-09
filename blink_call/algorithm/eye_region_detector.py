@@ -53,9 +53,11 @@ class EyeRegionDetector:
         self.eye_padding_ratio = float(configs.get("eye_padding_ratio", 0.06))
         self.min_eye_padding = int(configs.get("min_eye_padding", 4))
 
-        # A full camera frame makes a distant face very small at the detector's
-        # fixed input resolution.  Once a face has been found, search a region
-        # around its last position so that it occupies more detector pixels.
+        # Start with full-frame detection, then use the previous face position
+        # and a centered fallback to avoid running a full YOLO pass on every
+        # frame once tracking has been established.
+        self.enable_tracking_roi = bool(configs.get("enable_tracking_roi", True))
+        self.enable_center_zoom = bool(configs.get("enable_center_zoom", True))
         self.tracking_roi_scale = float(configs.get("tracking_roi_scale", 3.0))
         self.fallback_crop_ratio = float(configs.get("fallback_crop_ratio", 0.65))
 
@@ -102,16 +104,33 @@ class EyeRegionDetector:
         x1, y1, x2, y2 = roi_box
         roi = frame[y1:y2, x1:x2]
         if roi.size == 0:
-            return np.zeros((0, 5), dtype=np.float32)
+            empty = np.zeros((0, 5), dtype=np.float32)
+            return empty, empty.copy()
 
         faces, _ = self.face_detector.detect(roi)
+        landmark_faces = self._landmark_faces_for_last_detection(faces)
         if faces.shape[0] == 0:
-            return faces
+            return faces, landmark_faces
 
         faces = faces.copy()
+        landmark_faces = landmark_faces.copy()
         faces[:, [0, 2]] += x1
         faces[:, [1, 3]] += y1
-        return faces
+        landmark_faces[:, [0, 2]] += x1
+        landmark_faces[:, [1, 3]] += y1
+        return faces, landmark_faces
+
+    def _landmark_faces_for_last_detection(self, clipped_faces):
+        """Return score-aligned boxes before image-boundary clipping."""
+        candidate = getattr(self.face_detector, "last_unclipped_detections", None)
+        if candidate is None:
+            return clipped_faces.copy()
+        candidate = np.asarray(candidate, dtype=np.float32)
+        if candidate.shape != clipped_faces.shape:
+            return clipped_faces.copy()
+        if candidate.size and not np.allclose(candidate[:, 4], clipped_faces[:, 4], rtol=0.0, atol=1e-6):
+            return clipped_faces.copy()
+        return candidate.copy()
 
     @staticmethod
     def _eye_score(landmark_scores, indices):
@@ -247,29 +266,32 @@ class EyeRegionDetector:
         if not isinstance(frame, np.ndarray) or frame.ndim < 2:
             return self._return_data(debug_info="invalid frame data")
 
-        # 1. Face region detection. Prefer a zoomed tracking ROI for distant
-        # faces, then fall back to the whole frame and a centered zoom crop.
+        # 1. Face region detection.  Full-frame inference is the default so the
+        # software follows the same spatial path as offline inference.  The
+        # tracking and centered zoom paths are explicit opt-ins.
         t0 = time.perf_counter()
         try:
             detection_mode = "full"
             faces = np.zeros((0, 5), dtype=np.float32)
+            landmark_faces = faces.copy()
 
-            if self.last_face_bbox is not None:
+            if self.enable_tracking_roi and self.last_face_bbox is not None:
                 tracking_roi = self._expanded_roi_box(
                     self.last_face_bbox,
                     frame.shape,
                     self.tracking_roi_scale,
                 )
-                faces = self._detect_in_roi(frame, tracking_roi)
+                faces, landmark_faces = self._detect_in_roi(frame, tracking_roi)
                 detection_mode = "tracking_roi"
 
             if faces.shape[0] == 0:
                 faces, _ = self.face_detector.detect(frame)
+                landmark_faces = self._landmark_faces_for_last_detection(faces)
                 detection_mode = "full"
 
-            if faces.shape[0] == 0 and self.fallback_crop_ratio < 1.0:
+            if faces.shape[0] == 0 and self.enable_center_zoom and self.fallback_crop_ratio < 1.0:
                 fallback_roi = self._center_crop_box(frame.shape, self.fallback_crop_ratio)
-                faces = self._detect_in_roi(frame, fallback_roi)
+                faces, landmark_faces = self._detect_in_roi(frame, fallback_roi)
                 detection_mode = "center_zoom"
         except Exception as exc:
             return self._return_data(debug_info=f"yolov6 onnx inference error: {exc}")
@@ -277,15 +299,18 @@ class EyeRegionDetector:
         if faces.shape[0] == 0:
             self.last_face_bbox = None
             detector_debug = getattr(self.face_detector, "last_debug_info", "")
-            return self._return_data(debug_info=f"no face detected; {detector_debug}")
+            return self._return_data(debug_info=f"no face detected; mode={detection_mode}, {detector_debug}")
 
-        face = faces[np.argmax(faces[:, 4])]
+        face_index = int(np.argmax(faces[:, 4]))
+        face = faces[face_index]
+        landmark_face = landmark_faces[face_index]
         face_bbox = face[:4].tolist()
+        landmark_face_bbox = landmark_face[:4].tolist()
 
         # 2. Facial landmark detection
         t1 = time.perf_counter()
         try:
-            landmarks, crop_box, landmark_scores = self.landmarker.infer(frame, face_bbox)
+            landmarks, crop_box, landmark_scores = self.landmarker.infer(frame, landmark_face_bbox)
         except Exception as exc:
             return self._return_data(debug_info=f"hrnet onnx inference error: {exc}")
 
@@ -329,7 +354,11 @@ class EyeRegionDetector:
             f"score_gap={eye_score_info['score_gap']:.3f}, "
             f"reason={eye_score_info['reason']}, "
             f"switch_count={self.switch_count}, bad_count={self.bad_count}, "
-            f"mode={detection_mode}, eye_padding={adaptive_padding}, "
+            f"mode={detection_mode}, "
+            f"tracking_roi_enabled={self.enable_tracking_roi}, "
+            f"center_zoom_enabled={self.enable_center_zoom}, "
+            f"hrnet_unclipped_box={landmark_face_bbox != face_bbox}, "
+            f"eye_padding={adaptive_padding}, "
             f"det_ms={(t1 - t0) * 1000.0:.1f}, "
             f"lmk_ms={(t2 - t1) * 1000.0:.1f}, "
             f"total_ms={(time.perf_counter() - t0) * 1000.0:.1f}, "
