@@ -1,7 +1,5 @@
 import hashlib
-import threading
 import time
-from collections import deque
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
@@ -18,14 +16,9 @@ class InferenceWorker(QThread):
     def __init__(self, home_model):
         super().__init__()
         self.home_model = home_model
-        self._debug_frame_lock = threading.Lock()
-        self._debug_frame_buffer = deque(maxlen=3)
 
-    def initialize_vars(self, config, include_debug_frame=False):
+    def initialize_vars(self, config):
         self.blink_pattern = config["pattern"]
-        self.include_debug_frame = bool(include_debug_frame)
-        with self._debug_frame_lock:
-            self._debug_frame_buffer.clear()
         self.debug_info(f"[InferenceWorker] blink_pattern: {self.blink_pattern}")
 
         self.eye_region_detector = EyeRegionDetector(config["eye_region_detection_algorithm"])
@@ -105,20 +98,6 @@ class InferenceWorker(QThread):
                 identities[name] = {"path": str(path), "error": str(exc)}
                 self.debug_info(f"[InferenceWorker] {name}_model_identity_error: path={path}, error={exc}")
         return identities
-
-    def _store_debug_frame(self, timestamp_ms, frame):
-        if not self.include_debug_frame:
-            return
-        with self._debug_frame_lock:
-            self._debug_frame_buffer.append((int(timestamp_ms), frame))
-
-    def get_debug_frame(self, timestamp_ms):
-        """Return a matching debug frame without sending it through Qt signals."""
-        with self._debug_frame_lock:
-            for buffered_timestamp_ms, frame in reversed(self._debug_frame_buffer):
-                if buffered_timestamp_ms == int(timestamp_ms):
-                    return frame
-        return None
 
     def reset_progress_state(self):
         self.progress_step_idx = 0
@@ -261,9 +240,6 @@ class InferenceWorker(QThread):
                 ]
             ),
         }
-        # Keep the large image out of the queued Qt result signal.  The UI can
-        # retrieve the matching frame from this bounded cache by timestamp.
-        self._store_debug_frame(inference_finished_timestamp_ms, frame)
         return result
 
     @staticmethod

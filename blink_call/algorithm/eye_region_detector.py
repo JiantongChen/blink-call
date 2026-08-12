@@ -21,6 +21,7 @@ class EyeRegionDetector:
     """
 
     def __init__(self, configs):
+        configs = configs or {}
         self.yolov6_onnx_path = str(configs.get("yolov6_onnx_path", DEFAULT_YOLOV6_ONNX_PATH))
         self.hrnet_onnx_path = str(configs.get("hrnet_onnx_path", APP_MODEL_ROOT / "hrnet" / "hrnet.onnx"))
 
