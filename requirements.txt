@@ -12,3 +12,4 @@ opencv-python
 Pillow
 pre_commit
 PySide6
+tzdata
