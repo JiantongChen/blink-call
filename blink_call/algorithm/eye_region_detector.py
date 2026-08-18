@@ -234,10 +234,10 @@ class EyeRegionDetector:
 
     def detect(self, frame):
         if frame is None:
-            return self._return_data(debug_info="frame is None")
+            return self._return_data(status="inference_error", debug_info="frame is None")
 
         if not isinstance(frame, np.ndarray) or frame.ndim < 2:
-            return self._return_data(debug_info="invalid frame data")
+            return self._return_data(status="inference_error", debug_info="invalid frame data")
 
         # 1. Face region detection.  Full-frame inference is the default so the
         # software follows the same spatial path as offline inference.  The
@@ -267,12 +267,18 @@ class EyeRegionDetector:
                 faces, landmark_faces = self._detect_in_roi(frame, fallback_roi)
                 detection_mode = "center_zoom"
         except Exception as exc:
-            return self._return_data(debug_info=f"yolov6 onnx inference error: {exc}")
+            return self._return_data(
+                status="inference_error",
+                debug_info=f"yolov6 onnx inference error: {exc}",
+            )
 
         if faces.shape[0] == 0:
             self.last_face_bbox = None
             detector_debug = getattr(self.face_detector, "last_debug_info", "")
-            return self._return_data(debug_info=f"no face detected; mode={detection_mode}, {detector_debug}")
+            return self._return_data(
+                status="no_face",
+                debug_info=f"no face detected; mode={detection_mode}, {detector_debug}",
+            )
 
         face_index = int(np.argmax(faces[:, 4]))
         face = faces[face_index]
@@ -285,11 +291,17 @@ class EyeRegionDetector:
         try:
             landmarks, crop_box, landmark_scores = self.landmarker.infer(frame, landmark_face_bbox)
         except Exception as exc:
-            return self._return_data(debug_info=f"hrnet onnx inference error: {exc}")
+            return self._return_data(
+                status="inference_error",
+                debug_info=f"hrnet onnx inference error: {exc}",
+            )
 
         if landmarks is None or landmarks.ndim != 2 or landmarks.shape[1] != 2:
             bad_shape = None if landmarks is None else landmarks.shape
-            return self._return_data(debug_info=f"invalid landmarks predicted: {bad_shape}")
+            return self._return_data(
+                status="keypoints_invalid",
+                debug_info=f"invalid landmarks predicted: {bad_shape}",
+            )
 
         # 3. Select eye area
         t2 = time.perf_counter()
@@ -317,7 +329,10 @@ class EyeRegionDetector:
                 eye_candidates,
             )
         except Exception as exc:
-            return self._return_data(debug_info=f"eye selection error: {exc}")
+            return self._return_data(
+                status="inference_error",
+                debug_info=f"eye selection error: {exc}",
+            )
 
         # Keep the YOLOv6 box as the face-box result and tracking input.
         # HRNet landmarks are a downstream result and must not redefine it.
@@ -348,6 +363,7 @@ class EyeRegionDetector:
         )
 
         return self._return_data(
+            status="ok" if eye_bbox is not None else "keypoints_invalid",
             eye_bbox_xyxy=eye_bbox,
             face_bbox_xyxy=[float(v) for v in face_bbox],
             landmarks=landmarks.tolist(),
@@ -357,6 +373,7 @@ class EyeRegionDetector:
 
     def _return_data(
         self,
+        status="ok",
         eye_bbox_xyxy=None,
         face_bbox_xyxy=None,
         landmarks=None,
@@ -365,6 +382,7 @@ class EyeRegionDetector:
     ):
         return {
             "timestamp_ms": int(time.time() * 1000),
+            "status": status,
             "eye_bbox_xyxy": eye_bbox_xyxy,
             "face_bbox_xyxy": face_bbox_xyxy,
             "landmarks": landmarks,

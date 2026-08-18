@@ -42,6 +42,7 @@ class InferenceWorker(QThread):
         self.latest_eye_bbox = None
         self.latest_face_bbox = None
         self.latest_landmarks = None
+        self.latest_eye_region_status = "inference_error"
         self.debug_emit_interval_s = 1.0
         self.last_eye_region_debug_emit_s = time.perf_counter()
         self.last_eye_state_debug_emit_s = time.perf_counter()
@@ -214,6 +215,7 @@ class InferenceWorker(QThread):
             "inference_elapsed_ms": float(inference_elapsed_ms),
             "debug_detection_elapsed_ms": float(detection_elapsed_ms),
             "debug_classification_elapsed_ms": float(classification_elapsed_ms),
+            "debug_eye_region_status": self.latest_eye_region_status,
             "blinck_call_flag": bool(blinck_call_flag),
             "stage_sound_prompt_flag": bool(stage_sound_prompt_flag),
             "blink_progress_ratio": float(progress_ratio),
@@ -287,8 +289,9 @@ class InferenceWorker(QThread):
             self.latest_eye_bbox = None
             self.latest_face_bbox = None
             self.latest_landmarks = None
-            self.eye_region_status.emit("error")
-            self.debug_info(f"[EyeRegionDetector] eye_region_error: {exc}")
+            self.latest_eye_region_status = "inference_error"
+            self.eye_region_status.emit(self.latest_eye_region_status)
+            self.debug_info(f"[EyeRegionDetector] status=inference_error; eye_region_error: {exc}")
             return
 
         eye_bbox = result.get("eye_bbox_xyxy")
@@ -301,14 +304,23 @@ class InferenceWorker(QThread):
             if landmarks is not None and len(landmarks)
             else None
         )
-        if not self.latest_face_bbox:
-            status = "no_face"
-        elif not self.latest_landmarks:
-            status = "landmarks_error"
-        else:
-            status = "ok" if self.latest_eye_bbox else "error"
+        status = result.get("status")
+        if status not in {"ok", "no_face", "keypoints_invalid", "inference_error"}:
+            # Keep a safe fallback for detector implementations that return the
+            # old payload without an explicit status.
+            if not self.latest_face_bbox:
+                status = "no_face"
+            elif not self.latest_landmarks:
+                status = "keypoints_invalid"
+            else:
+                status = "ok" if self.latest_eye_bbox else "keypoints_invalid"
+
+        self.latest_eye_region_status = status
         self.eye_region_status.emit(status)
-        self.debug_info(f"[EyeRegionDetector] debug info: {result.get('debug_info', '')}", "eye_region")
+        self.debug_info(
+            f"[EyeRegionDetector] status={status}; debug info: {result.get('debug_info', '')}",
+            "eye_region",
+        )
 
     def stabilize_eye_state(self, raw_eye_state):
         if hasattr(raw_eye_state, "value"):

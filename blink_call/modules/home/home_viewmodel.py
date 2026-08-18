@@ -195,8 +195,11 @@ class HomeViewModel(QObject):
     def on_eye_region_status(self, status):
         key = {
             "no_face": "face_not_detected_hint",
-            "landmarks_error": "face_landmarks_failed_hint",
-            "error": "blink_call_abnormal_hint",
+            "landmarks_error": "keypoints_invalid_hint",
+            "keypoints_invalid": "keypoints_invalid_hint",
+            "inference_error": "inference_error_hint",
+            # Backward-compatible aliases for older detector payloads.
+            "error": "keypoints_invalid_hint",
         }.get(status)
         i18n = get_i18n(self.setting_vm.get_config("ui.language"))
         self.home_hint.emit({"visible": key is not None, "text": i18n.get(key, "")})
