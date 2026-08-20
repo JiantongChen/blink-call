@@ -5,7 +5,7 @@ def draw_debug(
     frame,
     info: dict,
     color=(42, 90, 255),
-    eye_color=(80, 220, 120),
+    eye_color=(255, 0, 255),
     detector_eye_color=(0, 255, 255),
     raw_face_color=(0, 165, 255),
     landmark_step=1,
@@ -29,6 +29,8 @@ def draw_debug(
     raw_face_bbox = info.get("debug_raw_face_bbox_xyxy")
     detector_eye_bbox = info.get("debug_detector_eye_bbox_xyxy")
     classifier_eye_bbox = info.get("debug_eye_bbox_xyxy")
+    classifier_state = info.get("debug_classifier_state")
+    classifier_confidence = info.get("debug_classifier_confidence")
     landmarks = info.get("debug_landmarks")
 
     face_box = get_safe_bbox(face_bbox, w, h)
@@ -70,6 +72,23 @@ def draw_debug(
     if classifier_eye_box is not None:
         left, top, right, bottom = classifier_eye_box
         cv2.rectangle(draw_frame, (left, top), (right, bottom), eye_color, 2)
+        confidence_text = "n/a"
+        try:
+            if classifier_confidence is not None and float(classifier_confidence) >= 0:
+                confidence_text = f"{float(classifier_confidence):.3f}"
+        except (TypeError, ValueError):
+            pass
+        prediction_text = f"ViTA: {classifier_state or 'unknown'} ({confidence_text})"
+        cv2.putText(
+            draw_frame,
+            prediction_text,
+            (left, max(14, top - 4)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.45,
+            eye_color,
+            1,
+            cv2.LINE_AA,
+        )
         cv2.putText(
             draw_frame,
             "classifier ROI",

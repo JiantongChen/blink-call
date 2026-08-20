@@ -1,4 +1,5 @@
 import hashlib
+import math
 import time
 from pathlib import Path
 
@@ -25,7 +26,7 @@ class InferenceWorker(QThread):
         classifier_config = config["eye_state_classification_algorithm"] or {}
         self.eye_state_classifier = EyeStateClassifier(classifier_config)
         self.classifier_input_roi_scale = float(
-            classifier_config.get("classifier_input_roi_scale", 1.5)
+            classifier_config.get("classifier_input_roi_scale", 1.3)
         )
         if self.classifier_input_roi_scale < 1.0:
             raise ValueError("classifier_input_roi_scale must be >= 1.0")
@@ -52,18 +53,15 @@ class InferenceWorker(QThread):
 
         self.progress_step_idx = 0
         self.progress_in_step_s = 0.0
-        self.last_progress_update_s = None
         self.transition_buffer_s = 3.0
         self.in_transition_buffer = False
-        self.transition_elapsed_s = 0.0
+        self.transition_deadline_s = None
 
         self.valid_eye_states = ("open", "closed")
-        self.state_hold_s = 0.45
-        self.state_vote_window_size = 5
-        self.state_vote_min_count = 3
-        self.state_vote_window = []
+        self.state_window_start_s = None
+        self.state_window_samples = []
+        self.state_window_debug_info = "state_window=idle"
         self.last_stable_eye_state = None
-        self.last_stable_eye_state_s = 0.0
 
     @staticmethod
     def file_sha256(path, chunk_size=1024 * 1024):
@@ -104,7 +102,11 @@ class InferenceWorker(QThread):
         self.progress_step_idx = 0
         self.progress_in_step_s = 0.0
         self.in_transition_buffer = False
-        self.transition_elapsed_s = 0.0
+        self.transition_deadline_s = None
+        self.state_window_start_s = None
+        self.state_window_samples = []
+        self.state_window_debug_info = "state_window=idle; progress_reset=true"
+        self.last_stable_eye_state = None
 
     def debug_info(self, text, source=""):
         now = time.perf_counter()
@@ -155,13 +157,18 @@ class InferenceWorker(QThread):
             # the result so that detector, landmarker and classifier activity
             # can be traced back to this exact source frame.
             source_timestamp_ms = int(time.time() * 1000)
-            result = self.inference(frame, source_timestamp_ms=source_timestamp_ms)
+            sample_timestamp_s = time.perf_counter()
+            result = self.inference(
+                frame,
+                source_timestamp_ms=source_timestamp_ms,
+                sample_timestamp_s=sample_timestamp_s,
+            )
             if not self.running:
                 break
             self.result_ready.emit(result)
             self.stat_fps()
 
-    def inference(self, frame, source_timestamp_ms=None):
+    def inference(self, frame, source_timestamp_ms=None, sample_timestamp_s=None):
         """Run the complete eye pipeline synchronously on one frame snapshot.
 
         This method already executes inside ``InferenceWorker``'s ``QThread``.
@@ -171,6 +178,8 @@ class InferenceWorker(QThread):
         """
         if source_timestamp_ms is None:
             source_timestamp_ms = int(time.time() * 1000)
+        if sample_timestamp_s is None:
+            sample_timestamp_s = time.perf_counter()
         inference_started_timestamp_ms = int(time.time() * 1000)
         inference_started = time.perf_counter()
 
@@ -200,9 +209,12 @@ class InferenceWorker(QThread):
         self.debug_info(f"[EyeStateClassifier] debug info: {cls_result.get('debug_info', '')}", "eye_state")
 
         raw_eye_state = cls_result.get("state")
-        eye_state = self.stabilize_eye_state(raw_eye_state)
+        eye_state = self.normalize_eye_state(raw_eye_state)
         confidence = cls_result.get("confidence")
-        progress_ratio, blinck_call_flag, stage_sound_prompt_flag = self.update_forward_progress(eye_state)
+        progress_ratio, blinck_call_flag, stage_sound_prompt_flag = self.update_forward_progress(
+            eye_state,
+            sample_timestamp_s=sample_timestamp_s,
+        )
         inference_elapsed_ms = (time.perf_counter() - inference_started) * 1000.0
         inference_finished_timestamp_ms = int(time.time() * 1000)
         confidence_text = "None" if confidence is None else f"{float(confidence):.3f}"
@@ -219,6 +231,8 @@ class InferenceWorker(QThread):
             "blinck_call_flag": bool(blinck_call_flag),
             "stage_sound_prompt_flag": bool(stage_sound_prompt_flag),
             "blink_progress_ratio": float(progress_ratio),
+            "debug_classifier_state": eye_state,
+            "debug_classifier_confidence": confidence,
             "debug_eye_bbox_xyxy": classifier_eye_bbox,
             "debug_detector_eye_bbox_xyxy": detector_eye_bbox,
             "debug_face_bbox_xyxy": self.latest_face_bbox,
@@ -235,7 +249,9 @@ class InferenceWorker(QThread):
                     f"eye_state: {eye_state}",
                     f"raw_eye_state: {raw_eye_state}",
                     f"confidence: {confidence_text}",
+                    f"sample_timestamp_s: {sample_timestamp_s:.6f}",
                     f"pattern_progress: {progress_ratio:.3f}",
+                    f"{self.state_window_debug_info}",
                     f"detector_eye_bbox: {detector_eye_bbox}",
                     f"classifier_eye_bbox: {classifier_eye_bbox}",
                     f"classifier_input_roi_scale: {self.classifier_input_roi_scale:.2f}",
@@ -322,89 +338,131 @@ class InferenceWorker(QThread):
             "eye_region",
         )
 
-    def stabilize_eye_state(self, raw_eye_state):
+    @staticmethod
+    def normalize_eye_state(raw_eye_state):
         if hasattr(raw_eye_state, "value"):
-            normalized_state = raw_eye_state.value
-        elif raw_eye_state is None:
-            normalized_state = None
-        else:
-            normalized_state = str(raw_eye_state)
+            return raw_eye_state.value
+        if raw_eye_state is None:
+            return None
+        return str(raw_eye_state)
 
-        now = time.perf_counter()
-        if normalized_state in self.valid_eye_states:
-            self.state_vote_window.append(normalized_state)
-            self.state_vote_window = self.state_vote_window[-self.state_vote_window_size :]
+    def _start_state_window(self, eye_state, sample_timestamp_s):
+        if self.progress_step_idx >= len(self.blink_pattern):
+            return False
 
-            voted_state = max(self.valid_eye_states, key=self.state_vote_window.count)
-            if self.state_vote_window.count(voted_state) >= self.state_vote_min_count:
-                self.last_stable_eye_state = voted_state
-                self.last_stable_eye_state_s = now
-                return voted_state
+        target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
+        if eye_state != target_state:
+            return False
 
-            if self.last_stable_eye_state and now - self.last_stable_eye_state_s <= self.state_hold_s:
-                return self.last_stable_eye_state
-            return normalized_state
+        self.state_window_start_s = float(sample_timestamp_s)
+        self.state_window_samples = [eye_state]
+        self.progress_in_step_s = 0.0
+        self.state_window_debug_info = (
+            f"state_window=collect; target={target_state}; samples=1"
+        )
+        return True
 
-        if self.last_stable_eye_state and now - self.last_stable_eye_state_s <= self.state_hold_s:
-            return self.last_stable_eye_state
+    def _finish_state_window(self):
+        target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
+        sample_count = len(self.state_window_samples)
+        target_count = sum(state == target_state for state in self.state_window_samples)
+        other_count = sum(
+            state in self.valid_eye_states and state != target_state
+            for state in self.state_window_samples
+        )
+        required_count = math.ceil(sample_count * 0.5) if sample_count else 0
+        passed = (
+            sample_count > 0
+            and target_count >= required_count
+            and target_count > other_count
+        )
+        window_start_s = self.state_window_start_s
+        self.state_window_start_s = None
+        self.state_window_samples = []
+        self.progress_in_step_s = 0.0
+        self.state_window_debug_info = (
+            f"state_window={'passed' if passed else 'failed'}; target={target_state}; "
+            f"target_count={target_count}; other_count={other_count}; "
+            f"sample_count={sample_count}; required_count={required_count}"
+        )
+        if passed:
+            self.last_stable_eye_state = target_state
+        return passed, window_start_s
 
-        return normalized_state
-
-    def update_forward_progress(self, eye_state):
-        now = time.perf_counter()
-        dt = 0.0 if self.last_progress_update_s is None else min(now - self.last_progress_update_s, 0.5)
-        self.last_progress_update_s = now
+    def update_forward_progress(self, eye_state, sample_timestamp_s=None):
+        now = time.perf_counter() if sample_timestamp_s is None else float(sample_timestamp_s)
         stage_sound_prompt_flag = False
 
-        if self.in_transition_buffer:
-            self.transition_elapsed_s += dt
+        if not self.blink_pattern:
+            self.reset_progress_state()
+            return 0.0, False, False
 
-            if self.transition_elapsed_s > self.transition_buffer_s:
-                self.reset_progress_state()
-            elif eye_state in {"open", "closed"} and self.progress_step_idx < len(self.blink_pattern):
-                next_rule_state = self.blink_pattern[self.progress_step_idx]["state"]
-                if eye_state == next_rule_state:
-                    self.in_transition_buffer = False
-                    self.transition_elapsed_s = 0.0
-                    self.progress_in_step_s = dt
+        eye_state = self.normalize_eye_state(eye_state)
+        first_state = str(self.blink_pattern[0]["state"])
 
-        elif eye_state in {"open", "closed"} and self.progress_step_idx < len(self.blink_pattern):
-            rule = self.blink_pattern[self.progress_step_idx]
-            rule_state = rule["state"]
-            rule_duration = float(rule["duration_s"])
-
-            if eye_state == rule_state:
-                self.progress_in_step_s += dt
+        if self.state_window_start_s is not None:
+            rule_duration = max(0.0, float(self.blink_pattern[self.progress_step_idx]["duration_s"]))
+            window_end_s = self.state_window_start_s + rule_duration
+            if now < window_end_s:
+                if eye_state in self.valid_eye_states:
+                    self.state_window_samples.append(eye_state)
+                self.progress_in_step_s = max(0.0, now - self.state_window_start_s)
+                target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
+                self.state_window_debug_info = (
+                    f"state_window=collect; target={target_state}; "
+                    f"samples={len(self.state_window_samples)}"
+                )
             else:
-                self.reset_progress_state()
+                passed, window_start_s = self._finish_state_window()
+                if not passed:
+                    self.reset_progress_state()
+                    if eye_state == first_state:
+                        self._start_state_window(eye_state, now)
+                    return self.current_progress_ratio(self.blink_pattern), False, False
 
-            if self.progress_in_step_s >= rule_duration:
-                if bool(rule.get("sound_prompt")):
+                completed_rule = self.blink_pattern[self.progress_step_idx]
+                if bool(completed_rule.get("sound_prompt")):
                     stage_sound_prompt_flag = True
                 self.progress_step_idx += 1
 
-                overflow = self.progress_in_step_s - rule_duration
-                is_same_state = (
-                    self.progress_step_idx < len(self.blink_pattern)
-                    and eye_state == self.blink_pattern[self.progress_step_idx]["state"]
+                if self.progress_step_idx >= len(self.blink_pattern):
+                    ratio = 1.0
+                    blink = (now - self.last_match_time) >= self.match_cooldown_s
+                    if blink:
+                        self.last_match_time = now
+                        self.reset_progress_state()
+                    return ratio, blink, stage_sound_prompt_flag
+
+                self.in_transition_buffer = True
+                self.transition_deadline_s = (
+                    window_start_s + rule_duration + self.transition_buffer_s
                 )
-                if is_same_state:
-                    self.progress_in_step_s = overflow
-                else:
-                    self.progress_in_step_s = 0.0
-                    if self.progress_step_idx < len(self.blink_pattern):
-                        self.in_transition_buffer = True
-                        self.transition_elapsed_s = 0.0
+                if now >= self.transition_deadline_s:
+                    self.reset_progress_state()
+                    if eye_state == first_state:
+                        self._start_state_window(eye_state, now)
+                elif eye_state == str(self.blink_pattern[self.progress_step_idx]["state"]):
+                    self.in_transition_buffer = False
+                    self.transition_deadline_s = None
+                    self._start_state_window(eye_state, now)
+
+        elif self.in_transition_buffer:
+            if now >= self.transition_deadline_s:
+                self.reset_progress_state()
+                if eye_state == first_state:
+                    self._start_state_window(eye_state, now)
+            elif eye_state == str(self.blink_pattern[self.progress_step_idx]["state"]):
+                self.in_transition_buffer = False
+                self.transition_deadline_s = None
+                self._start_state_window(eye_state, now)
+
+        elif eye_state == first_state:
+            # Startup is intentionally level-triggered: an already active
+            # first state starts a new attempt immediately.
+            self._start_state_window(eye_state, now)
 
         ratio = self.current_progress_ratio(self.blink_pattern)
-
-        blink = False
-        if ratio >= 1.0 and (now - self.last_match_time) >= self.match_cooldown_s:
-            blink = True
-            self.last_match_time = now
-            self.reset_progress_state()
-
-        return ratio, blink, stage_sound_prompt_flag
+        return ratio, False, stage_sound_prompt_flag
 
     def current_progress_ratio(self, pattern):
         if self.progress_step_idx >= len(pattern):
