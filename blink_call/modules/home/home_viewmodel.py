@@ -149,7 +149,7 @@ class HomeViewModel(QObject):
                 self.last_local_camera_state = state
                 if state == previous_state:
                     return
-                if state in {"starting", "reconnecting"}:
+                if state in {"starting", "degraded", "reconnecting"}:
                     self.emit_show_camera_status("local_camera_reconnecting")
                 else:
                     self.emit_show_camera_status("local_invalid_camera")
