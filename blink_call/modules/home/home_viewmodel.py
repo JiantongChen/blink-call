@@ -74,6 +74,7 @@ class HomeViewModel(QObject):
         self.is_call_audio_playing = False
         self.setting_popup = False
         self.last_local_camera_state = None
+        self.camera_frame_available = False
 
         self.is_recording_mode = False
         self.recording_output_dir = None
@@ -137,6 +138,10 @@ class HomeViewModel(QObject):
     def on_update_frame(self):
         _mode, frame, status_code = self.model.read_frame()
         if frame is None:
+            if self.camera_frame_available:
+                self.camera_frame_available = False
+                self.home_hint.emit({"visible": False, "text": ""})
+
             if _mode == "local":
                 camera_status = self.model.get_camera_status() or {}
                 state = camera_status.get("state")
@@ -154,6 +159,7 @@ class HomeViewModel(QObject):
                 self.emit_show_camera_status("unknown_error")
             return
 
+        self.camera_frame_available = True
         self.last_local_camera_state = "running" if _mode == "local" else None
 
         if self.debug_mode:
@@ -216,6 +222,9 @@ class HomeViewModel(QObject):
             self.show_debug_msg.emit(text)
 
     def on_eye_region_status(self, status):
+        if not self.camera_frame_available:
+            return
+
         key = {
             "no_face": "face_not_detected_hint",
             "landmarks_error": "keypoints_invalid_hint",
