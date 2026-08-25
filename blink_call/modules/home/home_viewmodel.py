@@ -73,6 +73,7 @@ class HomeViewModel(QObject):
         self.ui_fps_counter = 0
         self.is_call_audio_playing = False
         self.setting_popup = False
+        self.last_local_camera_state = None
 
         self.is_recording_mode = False
         self.recording_output_dir = None
@@ -112,13 +113,21 @@ class HomeViewModel(QObject):
         if self.setting_model.get_config("camera.mode") == "remote":
             remote_ip = self.setting_vm.get_config("camera.remote.ip")
             remote_port = self.setting_vm.get_config("camera.remote.port")
-            self.model.start_remote_capture(remote_ip, remote_port)
-            self.timer.start()
-            self.start_infer_worker()
+            ok = self.model.start_remote_capture(remote_ip, remote_port)
+            self.timer.start() if ok else self.timer.stop()
+            self.start_infer_worker() if ok else self.stop_infer_worker()
+            if not ok:
+                self.emit_show_camera_status("unknown_error")
 
         else:
             local_camera_id = self.setting_vm.get_config("camera.local_camera_id")
-            ok = self.model.start_local_capture(local_camera_id)
+            fallback_enabled = bool(self.setting_vm.get_config("camera.fallback.enabled"))
+            fallback_camera_id = self.setting_vm.get_config("camera.fallback.camera_id")
+            ok = self.model.start_local_capture(
+                local_camera_id,
+                fallback_camera_id=fallback_camera_id,
+                fallback_enabled=fallback_enabled,
+            )
 
             self.timer.start() if ok else self.timer.stop()
             self.start_infer_worker() if ok else self.stop_infer_worker()
@@ -129,12 +138,23 @@ class HomeViewModel(QObject):
         _mode, frame, status_code = self.model.read_frame()
         if frame is None:
             if _mode == "local":
-                self.emit_show_camera_status("local_invalid_camera")
+                camera_status = self.model.get_camera_status() or {}
+                state = camera_status.get("state")
+                previous_state = self.last_local_camera_state
+                self.last_local_camera_state = state
+                if state == previous_state:
+                    return
+                if state in {"starting", "reconnecting"}:
+                    self.emit_show_camera_status("local_camera_reconnecting")
+                else:
+                    self.emit_show_camera_status("local_invalid_camera")
             elif _mode == "remote":
                 self.emit_show_camera_status("remote_error", status_code=status_code)
             else:
                 self.emit_show_camera_status("unknown_error")
             return
+
+        self.last_local_camera_state = "running" if _mode == "local" else None
 
         if self.debug_mode:
             self.ui_fps_counter += 1

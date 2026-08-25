@@ -35,6 +35,7 @@ class InferenceWorker(QThread):
         self.running = True
         self.min_interval = 1.0 / 10.0
         self.last_time = 0.0
+        self.last_missing_frame_debug_s = -float("inf")
 
         self.stat_fps_interval = 10.0
         self.infer_fps_window_start = time.perf_counter()
@@ -150,7 +151,9 @@ class InferenceWorker(QThread):
 
             frame = self.home_model.read_frame()[1]
             if frame is None:
-                self.debug_info("[InferenceWorker] WARNING: frame is None")
+                if now - self.last_missing_frame_debug_s >= 5.0:
+                    self.last_missing_frame_debug_s = now
+                    self.debug_info("[InferenceWorker] WARNING: frame is None")
                 continue
 
             # ``read_frame`` returns a snapshot.  Keep its read timestamp with

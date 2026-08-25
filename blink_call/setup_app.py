@@ -1,10 +1,13 @@
 import sys
+from pathlib import Path
 
+from PySide6.QtCore import QStandardPaths
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from blink_call.core.config_manager import ConfigManager
 from blink_call.core.dependency_injection import DI
+from blink_call.core.logging_setup import configure_app_logging
 from blink_call.core.navigation import Navigation
 from blink_call.core.theme_manager import ThemeManager
 from blink_call.main_window import MainWindow
@@ -28,6 +31,11 @@ def create_page(name, main_window, nav):
 def create_app():
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("assets/icons/eye.png"))
+
+    app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+    if not app_data_dir:
+        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.TempLocation)
+    configure_app_logging(Path(app_data_dir) / "blink_call" / "logs")
 
     # Load theme
     theme = ThemeManager(app)

@@ -60,8 +60,9 @@ class LocalCameraFrameServer:
             self._http_server.server_close()
             self._http_server = None
 
-        self.capture.stop()
+        capture_stopped = self.capture.stop()
         self._server_thread = None
+        return capture_stopped
 
     def read_latest_frame(self):
         return self.capture.read_latest_frame()

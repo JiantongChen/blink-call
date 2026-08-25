@@ -47,6 +47,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 test*/
+!tests/
+tests/*
+!tests/test_local_capture.py
 # Translations
 *.mo
 *.pot
