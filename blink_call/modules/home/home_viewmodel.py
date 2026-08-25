@@ -9,6 +9,8 @@ from PySide6.QtMultimedia import QSoundEffect
 
 from blink_call.core.inference_worker import InferenceWorker
 from blink_call.core.model_files_manager import ModelFilesManager
+from blink_call.core.recovering_sound_effect import RecoveringSoundEffect
+from blink_call.core.resource_path import get_resource_path
 from blink_call.modules.home.home_model import HomeModel
 from blink_call.modules.i18n import get_i18n
 from blink_call.modules.setting.setting_model import SettingModel
@@ -51,11 +53,11 @@ class HomeViewModel(QObject):
 
         self.call_sound_effect = QSoundEffect(self)
         self.call_sound_effect.setLoopCount(int(QSoundEffect.Loop.Infinite.value))
-        self.step_prompt_sound_effect = QSoundEffect(self)
-        self.step_prompt_sound_effect.setLoopCount(1)
-        self.step_prompt_sound_effect.setSource(
-            QUrl.fromLocalFile(str((Path("assets") / "audio" / "prompt.wav").resolve()))
+        self.stage_prompt_sound_player = RecoveringSoundEffect(
+            get_resource_path("assets", "audio", "prompt.wav"),
+            self,
         )
+        self.stage_prompt_sound_player.diagnostic.connect(self.show_debug_msg.emit)
         self.call_sound_stop_timer = QTimer(self)
         self.call_sound_stop_timer.setSingleShot(True)
         self.call_sound_stop_timer.timeout.connect(self.stop_call_audio)
@@ -86,6 +88,7 @@ class HomeViewModel(QObject):
     def on_page_enter(self):
         self._initialize_vars()
         self.stop_call_audio()
+        self.stage_prompt_sound_player.stop()
         self.close_recording_writer()
         self.blink_progress_updated.emit(
             {
@@ -206,6 +209,8 @@ class HomeViewModel(QObject):
 
     def on_listen_setting_popup(self, is_open: bool):
         self.setting_popup = is_open
+        if is_open:
+            self.stage_prompt_sound_player.stop()
 
     def start_infer_worker(self):
         if not bool(self.setting_vm.get_config("blink_call.enabled")) or self.is_recording_mode:
@@ -273,9 +278,8 @@ class HomeViewModel(QObject):
 
         volume = int(self.setting_vm.get_config("blink_call.audio.volume"))
         volume = max(0, min(100, volume))
-        self.step_prompt_sound_effect.setVolume(float(volume) / 100.0)
-        self.step_prompt_sound_effect.stop()
-        self.step_prompt_sound_effect.play()
+        self.stage_prompt_sound_player.set_volume(float(volume) / 100.0)
+        self.stage_prompt_sound_player.play()
 
     def start_recording(self):
         self.is_recording_mode = True
@@ -353,5 +357,6 @@ class HomeViewModel(QObject):
         self.timer.stop()
         self.stop_infer_worker()
         self.stop_call_audio()
+        self.stage_prompt_sound_player.stop()
         self.close_recording_writer()
         self.model.stop_active_sources()
