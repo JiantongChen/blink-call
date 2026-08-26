@@ -7,6 +7,12 @@ hooks:
 theme:
   name: material
 
+markdown_extensions:
+  - admonition
+  - attr_list
+  - toc:
+      permalink: true
+
 plugins:
   - search
   - i18n:
@@ -18,25 +24,52 @@ plugins:
           name: 简体中文
           build: true
           site_name: 眨眼呼叫 用户手册
+          nav:
+            - Home: index.md
+            - Quick Start:
+                - Overview: quick-start.md
+                - First Use: first-use.md
+                - Daily Use: daily-use.md
+            - Troubleshooting: troubleshooting.md
+            - Settings:
+                - Overview: settings.md
+                - Blink Pattern: blink-pattern.md
+                - Camera: camera.md
+                - Audio Alert: audio-alert.md
+                - Advanced: advanced.md
           nav_translations:
             Home: 首页
             Quick Start: 快速开始
+            Overview: 概览
             First Use: 首次使用
             Daily Use: 日常使用
+            Troubleshooting: 遇到问题
             Settings: 设置
             Blink Pattern: 眨眼动作设置
             Camera: 摄像头设置
             Audio Alert: 提醒声音设置
-            Advanced: 高级与辅助功能
+            Advanced: 其他设置与技术支持
         - locale: en
           name: English
           build: true
           site_name: Blink Call Manual
+          nav:
+            - Home: index.md
+            - Quick Start:
+                - First Use: first-use.md
+                - Daily Use: daily-use.md
+            - Settings:
+                - Blink Pattern: blink-pattern.md
+                - Camera: camera.md
+                - Audio Alert: audio-alert.md
+                - Advanced: advanced.md
           nav_translations:
             Home: Home
             Quick Start: Quick Start
+            Overview: Overview
             First Use: First Use
             Daily Use: Daily Use
+            Troubleshooting: Troubleshooting
             Settings: Settings
             Blink Pattern: Blink Pattern
             Camera: Camera
@@ -46,9 +79,12 @@ plugins:
 nav:
   - Home: index.md
   - Quick Start:
+      - Overview: quick-start.md
       - First Use: first-use.md
       - Daily Use: daily-use.md
+  - Troubleshooting: troubleshooting.md
   - Settings:
+      - Overview: settings.md
       - Blink Pattern: blink-pattern.md
       - Camera: camera.md
       - Audio Alert: audio-alert.md

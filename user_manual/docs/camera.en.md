@@ -24,6 +24,14 @@ Suggestions:
 
 ![Select camera](https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/camera-settings.jpg)
 
+## Disconnection Recovery and Fallback Camera
+
+The software automatically reconnects a local camera after a temporary disconnection. If the computer only has one external camera, leave the fallback camera disabled. The software will keep trying to restore the feed after the device is plugged in again.
+
+On a laptop with both built-in and external cameras, you can enable a fallback camera and enter a number different from the primary camera. If the primary camera remains unavailable, the software switches to the fallback. It does not automatically switch back during the same session, which prevents the feed from repeatedly changing.
+
+Test the primary and fallback numbers separately before use. Windows may also list infrared or virtual cameras; do not configure those as the fallback camera.
+
 ## Camera View Requirements
 
 Both of the patient's eyes should appear fully in the camera view, and the eyes should not be covered.
