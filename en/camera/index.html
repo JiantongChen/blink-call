@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://jiantongchen.github.io/blink-call/en/camera/">
+        <link rel="canonical" href="https://JouleEmbodiedAILab.github.io/blink-call/en/camera/">
       
       
         <link rel="prev" href="../blink-pattern/">
@@ -526,6 +526,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disconnection-recovery-and-fallback-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disconnection Recovery and Fallback Camera
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#camera-view-requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -657,6 +668,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disconnection-recovery-and-fallback-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disconnection Recovery and Fallback Camera
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#camera-view-requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -684,12 +706,12 @@
 
 
 
-<h1 id="camera">Camera</h1>
+<h1 id="camera">Camera<a class="headerlink" href="#camera" title="Permanent link">&para;</a></h1>
 <p>Camera settings are used to select the camera and help the software clearly see the patient's eyes.</p>
-<h2 id="local-camera">Local Camera</h2>
+<h2 id="local-camera">Local Camera<a class="headerlink" href="#local-camera" title="Permanent link">&para;</a></h2>
 <p>A local camera means a camera connected to the current computer, such as a built-in camera or a USB camera.</p>
 <p>By default, the software uses the local camera.</p>
-<h2 id="select-the-camera-number">Select the Camera Number</h2>
+<h2 id="select-the-camera-number">Select the Camera Number<a class="headerlink" href="#select-the-camera-number" title="Permanent link">&para;</a></h2>
 <p>If the computer has multiple cameras connected, you can adjust the camera number in Settings.</p>
 <p>Path:</p>
 <p>Settings -&gt; Camera -&gt; Local Camera -&gt; Camera Number.</p>
@@ -699,8 +721,12 @@
 <li>If no image appears, try 1, 2, and 3 in order.</li>
 <li>After each change, save the settings and return to the main screen to check whether the camera view is working.</li>
 </ul>
-<p><img alt="Select camera" src="https://cdn.jsdelivr.net/gh/JiantongChen/blink-call@main/user_manual/docs/images/camera-settings.jpg" /></p>
-<h2 id="camera-view-requirements">Camera View Requirements</h2>
+<p><img alt="Select camera" src="https://cdn.jsdelivr.net/gh/JouleEmbodiedAILab/blink-call@main/user_manual/docs/images/camera-settings.jpg" /></p>
+<h2 id="disconnection-recovery-and-fallback-camera">Disconnection Recovery and Fallback Camera<a class="headerlink" href="#disconnection-recovery-and-fallback-camera" title="Permanent link">&para;</a></h2>
+<p>The software automatically reconnects a local camera after a temporary disconnection. If the computer only has one external camera, leave the fallback camera disabled. The software will keep trying to restore the feed after the device is plugged in again.</p>
+<p>On a laptop with both built-in and external cameras, you can enable a fallback camera and enter a number different from the primary camera. If the primary camera remains unavailable, the software switches to the fallback. It does not automatically switch back during the same session, which prevents the feed from repeatedly changing.</p>
+<p>Test the primary and fallback numbers separately before use. Windows may also list infrared or virtual cameras; do not configure those as the fallback camera.</p>
+<h2 id="camera-view-requirements">Camera View Requirements<a class="headerlink" href="#camera-view-requirements" title="Permanent link">&para;</a></h2>
 <p>Both of the patient's eyes should appear fully in the camera view, and the eyes should not be covered.</p>
 <p>Avoid:</p>
 <ul>
