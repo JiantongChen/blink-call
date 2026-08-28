@@ -29,7 +29,7 @@ class EyeRegionDetector:
             onnx_path=self.yolov6_onnx_path,
             input_size=tuple(configs.get("det_size", (640, 640))),
             ctx_id=int(configs.get("ctx_id", -1)),
-            score_thresh=float(configs.get("det_thresh", 0.3)),
+            score_thresh=float(configs.get("det_thresh", 0.5)),
             nms_thresh=float(configs.get("det_nms_thresh", 0.45)),
             class_id=configs.get("yolov6_face_class_id", 0),
             max_detections=int(configs.get("det_max_detections", 100)),
