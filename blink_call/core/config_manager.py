@@ -36,7 +36,10 @@ class ConfigManager:
                     {"state": "closed", "duration_s": 1.0, "sound_prompt": True},
                 ],
                 "eye_region_detection_algorithm": {},
-                "eye_state_classification_algorithm": {},
+                "eye_state_classification_algorithm": {
+                    "open_confidence_thresh": 0.75,
+                    "closed_confidence_thresh": 0.5,
+                },
             },
             "debug_mode": False,
             "debug_log": {"save_to_local": False, "local_dir": default_log_dir},

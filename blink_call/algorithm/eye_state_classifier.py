@@ -36,7 +36,19 @@ class EyeStateClassifier:
 
     def __init__(self, configs):
         configs = configs or {}
-        self.confidence_thresh = float(configs.get("confidence_thresh", 0.5))
+        legacy_confidence_thresh = configs.get("confidence_thresh")
+        self.open_confidence_thresh = float(
+            configs.get(
+                "open_confidence_thresh",
+                0.75 if legacy_confidence_thresh is None else legacy_confidence_thresh,
+            )
+        )
+        self.closed_confidence_thresh = float(
+            configs.get(
+                "closed_confidence_thresh",
+                0.5 if legacy_confidence_thresh is None else legacy_confidence_thresh,
+            )
+        )
         self.debug_save_inputs = bool(configs.get("debug_save_inputs", False))
         self.debug_input_interval_s = max(0.0, float(configs.get("debug_input_interval_s", 0.5)))
         configured_debug_dir = configs.get("debug_input_dir")
@@ -144,7 +156,15 @@ class EyeStateClassifier:
             model_label = self.class_names[pred_idx] if pred_idx < len(self.class_names) else str(pred_idx)
             probabilities = self._softmax(logits)
             confidence = float(probabilities[pred_idx])
-            state = model_label if confidence > self.confidence_thresh else EyeState.NOT_SURE
+            confidence_thresh = {
+                EyeState.OPEN.value: self.open_confidence_thresh,
+                EyeState.CLOSE.value: self.closed_confidence_thresh,
+            }.get(model_label)
+            state = (
+                model_label
+                if confidence_thresh is not None and confidence > confidence_thresh
+                else EyeState.NOT_SURE
+            )
             if self.debug_save_inputs:
                 self._save_debug_inputs(
                     eye_roi,
@@ -164,6 +184,7 @@ class EyeStateClassifier:
                 confidence=confidence,
                 debug_info=(
                     f"label={model_label}, confidence={confidence:.3f}, state={state}, "
+                    f"confidence_thresh={confidence_thresh}, "
                     f"logits=[{logits_text}], probs=[{probabilities_text}], "
                     f"roi_shape={tuple(eye_roi.shape)}, input_range=[{input_min:.3f},{input_max:.3f}], "
                     f"resize={self.resize_wh}, interpolation={self.interpolation}, "
