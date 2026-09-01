@@ -54,9 +54,7 @@
 
 双击 `BlinkCall.exe`。软件打开后，主界面会显示摄像头画面和顶部的眨眼进度条。
 
-<p align="center">
-  <img width="720" src="user_manual/docs/images/home-main-window.jpg" alt="眨眼呼叫主界面"/>
-</p>
+
 
 ### 2. 下载模型文件
 
