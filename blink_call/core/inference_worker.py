@@ -1,6 +1,6 @@
 import hashlib
-import math
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
@@ -25,9 +25,7 @@ class InferenceWorker(QThread):
         self.eye_region_detector = EyeRegionDetector(config["eye_region_detection_algorithm"])
         classifier_config = config["eye_state_classification_algorithm"] or {}
         self.eye_state_classifier = EyeStateClassifier(classifier_config)
-        self.classifier_input_roi_scale = float(
-            classifier_config.get("classifier_input_roi_scale", 1.3)
-        )
+        self.classifier_input_roi_scale = float(classifier_config.get("classifier_input_roi_scale", 1.3))
         if self.classifier_input_roi_scale < 1.0:
             raise ValueError("classifier_input_roi_scale must be >= 1.0")
         self.model_identity = self.collect_model_identity()
@@ -45,6 +43,11 @@ class InferenceWorker(QThread):
         self.latest_face_bbox = None
         self.latest_landmarks = None
         self.latest_eye_region_status = "inference_error"
+        self.latest_eye_region_source_timestamp_ms = None
+        self.latest_eye_region_sample_timestamp_s = None
+        self.latest_detection_elapsed_ms = None
+        self.pending_eye_region_future = None
+        self.eye_region_executor = None
         self.debug_emit_interval_s = 1.0
         self.last_eye_region_debug_emit_s = time.perf_counter()
         self.last_eye_state_debug_emit_s = time.perf_counter()
@@ -59,10 +62,9 @@ class InferenceWorker(QThread):
         self.transition_deadline_s = None
 
         self.valid_eye_states = ("open", "closed")
+        self.state_window_pass_ratio = 0.9
         self.state_window_start_s = None
         self.state_window_samples = []
-        self.opposite_state_streak = 0
-        self.opposite_state_streak_limit = 2
         self.state_window_debug_info = "state_window=idle"
         self.last_stable_eye_state = None
 
@@ -108,7 +110,6 @@ class InferenceWorker(QThread):
         self.transition_deadline_s = None
         self.state_window_start_s = None
         self.state_window_samples = []
-        self.opposite_state_streak = 0
         self.state_window_debug_info = "state_window=idle; progress_reset=true"
         self.last_stable_eye_state = None
 
@@ -145,42 +146,41 @@ class InferenceWorker(QThread):
         self.running = False
 
     def run(self):
-        while self.running:
-            now = time.perf_counter()
-            if now - self.last_time < self.min_interval:
-                time.sleep(self.min_interval / 10.0)
-                continue
-            self.last_time = now
+        try:
+            while self.running:
+                now = time.perf_counter()
+                if now - self.last_time < self.min_interval:
+                    time.sleep(self.min_interval / 10.0)
+                    continue
+                self.last_time = now
 
-            frame = self.home_model.read_frame()[1]
-            if frame is None:
-                if now - self.last_missing_frame_debug_s >= 5.0:
-                    self.last_missing_frame_debug_s = now
-                    self.debug_info("[InferenceWorker] WARNING: frame is None")
-                continue
+                frame = self.home_model.read_frame()[1]
+                if frame is None:
+                    if now - self.last_missing_frame_debug_s >= 5.0:
+                        self.last_missing_frame_debug_s = now
+                        self.debug_info("[InferenceWorker] WARNING: frame is None")
+                    continue
 
-            # ``read_frame`` returns a snapshot.  Keep its read timestamp with
-            # the result so that detector, landmarker and classifier activity
-            # can be traced back to this exact source frame.
-            source_timestamp_ms = int(time.time() * 1000)
-            sample_timestamp_s = time.perf_counter()
-            result = self.inference(
-                frame,
-                source_timestamp_ms=source_timestamp_ms,
-                sample_timestamp_s=sample_timestamp_s,
-            )
-            if not self.running:
-                break
-            self.result_ready.emit(result)
-            self.stat_fps()
+                source_timestamp_ms = int(time.time() * 1000)
+                sample_timestamp_s = time.perf_counter()
+                result = self.inference(
+                    frame,
+                    source_timestamp_ms=source_timestamp_ms,
+                    sample_timestamp_s=sample_timestamp_s,
+                )
+                if not self.running:
+                    break
+                self.result_ready.emit(result)
+                self.stat_fps()
+        finally:
+            self._shutdown_eye_region_executor()
 
     def inference(self, frame, source_timestamp_ms=None, sample_timestamp_s=None):
-        """Run the complete eye pipeline synchronously on one frame snapshot.
+        """Classify at 10 Hz while eye-region detection runs asynchronously.
 
-        This method already executes inside ``InferenceWorker``'s ``QThread``.
-        Keeping face/landmark detection and eye classification here avoids the
-        old one-frame (or more) lag caused by a second executor and guarantees
-        that the eye crop is taken from the same frame used to locate it.
+        At most one detector task may be in flight. The classifier never waits
+        for YOLO/HRNet and crops the current frame with the latest completed eye
+        box, so detector latency cannot directly throttle classification.
         """
         if source_timestamp_ms is None:
             source_timestamp_ms = int(time.time() * 1000)
@@ -189,9 +189,12 @@ class InferenceWorker(QThread):
         inference_started_timestamp_ms = int(time.time() * 1000)
         inference_started = time.perf_counter()
 
-        detection_started = time.perf_counter()
-        self.detect_eye_region(frame)
-        detection_elapsed_ms = (time.perf_counter() - detection_started) * 1000.0
+        self.poll_latest_eye_region_result()
+        self.submit_eye_region_detect_task(
+            frame,
+            source_timestamp_ms=source_timestamp_ms,
+            sample_timestamp_s=sample_timestamp_s,
+        )
 
         detector_eye_bbox = self.latest_eye_bbox
         classifier_eye_bbox = self._get_classifier_input_bbox(
@@ -224,6 +227,15 @@ class InferenceWorker(QThread):
         inference_elapsed_ms = (time.perf_counter() - inference_started) * 1000.0
         inference_finished_timestamp_ms = int(time.time() * 1000)
         confidence_text = "None" if confidence is None else f"{float(confidence):.3f}"
+        detection_elapsed_ms = self.latest_detection_elapsed_ms
+        detection_elapsed_text = "None" if detection_elapsed_ms is None else f"{detection_elapsed_ms:.1f}"
+        eye_region_age_ms = None
+        if self.latest_eye_region_sample_timestamp_s is not None:
+            eye_region_age_ms = max(
+                0.0,
+                (sample_timestamp_s - self.latest_eye_region_sample_timestamp_s) * 1000.0,
+            )
+        eye_region_age_text = "None" if eye_region_age_ms is None else f"{eye_region_age_ms:.1f}"
 
         result = {
             "timestamp_ms": inference_finished_timestamp_ms,
@@ -231,9 +243,12 @@ class InferenceWorker(QThread):
             "inference_started_timestamp_ms": inference_started_timestamp_ms,
             "inference_finished_timestamp_ms": inference_finished_timestamp_ms,
             "inference_elapsed_ms": float(inference_elapsed_ms),
-            "debug_detection_elapsed_ms": float(detection_elapsed_ms),
+            "debug_detection_elapsed_ms": detection_elapsed_ms,
             "debug_classification_elapsed_ms": float(classification_elapsed_ms),
             "debug_eye_region_status": self.latest_eye_region_status,
+            "debug_eye_region_source_timestamp_ms": self.latest_eye_region_source_timestamp_ms,
+            "debug_eye_region_age_ms": eye_region_age_ms,
+            "debug_eye_region_detection_pending": self.pending_eye_region_future is not None,
             "blinck_call_flag": bool(blinck_call_flag),
             "stage_sound_prompt_flag": bool(stage_sound_prompt_flag),
             "blink_progress_ratio": float(progress_ratio),
@@ -246,11 +261,13 @@ class InferenceWorker(QThread):
             "debug_model_identity": self.model_identity,
             "debug_info": "\n".join(
                 [
-                    "frame_pipeline: same_frame",
+                    "frame_pipeline: async_latest_eye_region",
                     f"source_timestamp_ms: {int(source_timestamp_ms)}",
                     f"inference_started_timestamp_ms: {inference_started_timestamp_ms}",
                     f"inference_elapsed_ms: {inference_elapsed_ms:.1f}",
-                    f"detection_elapsed_ms: {detection_elapsed_ms:.1f}",
+                    f"detection_elapsed_ms: {detection_elapsed_text}",
+                    f"eye_region_age_ms: {eye_region_age_text}",
+                    f"eye_region_detection_pending: {self.pending_eye_region_future is not None}",
                     f"classification_elapsed_ms: {classification_elapsed_ms:.1f}",
                     f"eye_state: {eye_state}",
                     f"raw_eye_state: {raw_eye_state}",
@@ -265,6 +282,83 @@ class InferenceWorker(QThread):
             ),
         }
         return result
+
+    @staticmethod
+    def _run_eye_region_detect_task(
+        detector,
+        frame,
+        source_timestamp_ms,
+        sample_timestamp_s,
+    ):
+        started = time.perf_counter()
+        result = detector.detect(frame) or {}
+        return {
+            "result": result,
+            "source_timestamp_ms": int(source_timestamp_ms),
+            "sample_timestamp_s": float(sample_timestamp_s),
+            "elapsed_ms": (time.perf_counter() - started) * 1000.0,
+        }
+
+    def poll_latest_eye_region_result(self):
+        future = self.pending_eye_region_future
+        if future is None or not future.done():
+            return False
+
+        self.pending_eye_region_future = None
+        try:
+            completed = future.result()
+        except Exception as exc:
+            self._clear_eye_region_result("inference_error")
+            self.debug_info(f"[EyeRegionDetector] status=inference_error; eye_region_error: {exc}")
+            return False
+
+        self.latest_eye_region_source_timestamp_ms = completed["source_timestamp_ms"]
+        self.latest_eye_region_sample_timestamp_s = completed["sample_timestamp_s"]
+        self.latest_detection_elapsed_ms = float(completed["elapsed_ms"])
+        self._apply_eye_region_result(completed["result"])
+        return True
+
+    def submit_eye_region_detect_task(
+        self,
+        frame,
+        source_timestamp_ms=None,
+        sample_timestamp_s=None,
+    ):
+        if self.pending_eye_region_future is not None:
+            return False
+
+        if source_timestamp_ms is None:
+            source_timestamp_ms = int(time.time() * 1000)
+        if sample_timestamp_s is None:
+            sample_timestamp_s = time.perf_counter()
+        if self.eye_region_executor is None:
+            self.eye_region_executor = ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="eye-region",
+            )
+
+        # Capture the detector object so a fast stop/start cannot make an old
+        # task run against a newly initialized detector instance.
+        detector = self.eye_region_detector
+        self.pending_eye_region_future = self.eye_region_executor.submit(
+            self._run_eye_region_detect_task,
+            detector,
+            frame.copy(),
+            source_timestamp_ms,
+            sample_timestamp_s,
+        )
+        return True
+
+    def _shutdown_eye_region_executor(self):
+        future = self.pending_eye_region_future
+        self.pending_eye_region_future = None
+        if future is not None:
+            future.cancel()
+
+        executor = self.eye_region_executor
+        self.eye_region_executor = None
+        if executor is not None:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     @staticmethod
     def _get_classifier_input_bbox(frame_shape, eye_bbox, roi_scale):
@@ -304,17 +398,30 @@ class InferenceWorker(QThread):
         return [left, top, max(left + 2, right), max(top + 2, bottom)]
 
     def detect_eye_region(self, frame):
-        """Update regions from ``frame`` and clear stale results on failure."""
+        """Synchronously detect and apply a region for direct callers/tests."""
+        started = time.perf_counter()
         try:
             result = self.eye_region_detector.detect(frame) or {}
         except Exception as exc:
-            self.latest_eye_bbox = None
-            self.latest_face_bbox = None
-            self.latest_landmarks = None
-            self.latest_eye_region_status = "inference_error"
-            self.eye_region_status.emit(self.latest_eye_region_status)
+            self._clear_eye_region_result("inference_error")
             self.debug_info(f"[EyeRegionDetector] status=inference_error; eye_region_error: {exc}")
             return
+
+        self.latest_detection_elapsed_ms = (time.perf_counter() - started) * 1000.0
+        self._apply_eye_region_result(result)
+
+    def _clear_eye_region_result(self, status):
+        self.latest_eye_bbox = None
+        self.latest_face_bbox = None
+        self.latest_landmarks = None
+        self.latest_eye_region_status = status
+        self.latest_eye_region_source_timestamp_ms = None
+        self.latest_eye_region_sample_timestamp_s = None
+        self.latest_detection_elapsed_ms = None
+        self.eye_region_status.emit(status)
+
+    def _apply_eye_region_result(self, result):
+        """Apply a completed detector payload on the inference QThread."""
 
         eye_bbox = result.get("eye_bbox_xyxy")
         face_bbox = result.get("face_bbox_xyxy")
@@ -361,57 +468,46 @@ class InferenceWorker(QThread):
             return False
 
         self.state_window_start_s = float(sample_timestamp_s)
-        # The first matching frame anchors the action window but is not voting
-        # evidence. This keeps the transition frame out of the new action and
-        # lets the first subsequent frame verify a one-second window at 1 FPS.
-        self.state_window_samples = []
-        self.opposite_state_streak = 0
+        self.state_window_samples = ["correct"]
         self.progress_in_step_s = 0.0
         self.state_window_debug_info = (
-            f"state_window=collect; target={target_state}; samples=0; anchor=true; "
-            "opposite_streak=0"
+            f"state_window=collect; target={target_state}; correct_count=1; "
+            "incorrect_count=0; not_sure_count=0; sample_count=1; anchor=true"
         )
         return True
 
     def _record_state_window_sample(self, eye_state):
-        """Record post-anchor evidence and track consecutive valid opposites."""
+        """Put every in-window classification into one of three vote buckets."""
         target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
         if eye_state == target_state:
-            self.opposite_state_streak = 0
+            category = "correct"
         elif eye_state in self.valid_eye_states:
-            self.opposite_state_streak += 1
-
-        # Unknown states do not vote and do not clear an existing opposite
-        # streak. Two valid opposite observations therefore still fail when an
-        # uncertain frame occurs between them.
-        if eye_state in self.valid_eye_states:
-            self.state_window_samples.append(eye_state)
-
-        return self.opposite_state_streak >= self.opposite_state_streak_limit
+            category = "incorrect"
+        else:
+            # not_sure is the model's normal uncertainty result. Missing ROI,
+            # not_exist and inference errors are conservatively counted in the
+            # same denominator rather than silently improving the pass ratio.
+            category = "not_sure"
+        self.state_window_samples.append(category)
+        return category
 
     def _finish_state_window(self):
         target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
         sample_count = len(self.state_window_samples)
-        target_count = sum(state == target_state for state in self.state_window_samples)
-        other_count = sum(
-            state in self.valid_eye_states and state != target_state
-            for state in self.state_window_samples
-        )
-        required_count = math.ceil(sample_count * 0.5) if sample_count else 0
-        passed = (
-            sample_count > 0
-            and target_count >= required_count
-            and target_count > other_count
-        )
+        correct_count = self.state_window_samples.count("correct")
+        incorrect_count = self.state_window_samples.count("incorrect")
+        not_sure_count = self.state_window_samples.count("not_sure")
+        correct_ratio = correct_count / sample_count if sample_count else 0.0
+        passed = sample_count > 0 and correct_ratio >= self.state_window_pass_ratio
         window_start_s = self.state_window_start_s
         self.state_window_start_s = None
         self.state_window_samples = []
-        self.opposite_state_streak = 0
         self.progress_in_step_s = 0.0
         self.state_window_debug_info = (
             f"state_window={'passed' if passed else 'failed'}; target={target_state}; "
-            f"target_count={target_count}; other_count={other_count}; "
-            f"sample_count={sample_count}; required_count={required_count}"
+            f"correct_count={correct_count}; incorrect_count={incorrect_count}; "
+            f"not_sure_count={not_sure_count}; sample_count={sample_count}; "
+            f"correct_ratio={correct_ratio:.3f}; required_ratio={self.state_window_pass_ratio:.3f}"
         )
         if passed:
             self.last_stable_eye_state = target_state
@@ -432,30 +528,24 @@ class InferenceWorker(QThread):
             rule_duration = max(0.0, float(self.blink_pattern[self.progress_step_idx]["duration_s"]))
             window_end_s = self.state_window_start_s + rule_duration
             target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
-            opposite_limit_reached = self._record_state_window_sample(eye_state)
-
-            if opposite_limit_reached:
-                self.reset_progress_state()
-                if eye_state == first_state:
-                    self._start_state_window(eye_state, now)
-                return self.current_progress_ratio(self.blink_pattern), False, False
 
             if now < window_end_s:
+                self._record_state_window_sample(eye_state)
                 self.progress_in_step_s = max(0.0, now - self.state_window_start_s)
+                correct_count = self.state_window_samples.count("correct")
+                incorrect_count = self.state_window_samples.count("incorrect")
+                not_sure_count = self.state_window_samples.count("not_sure")
+                sample_count = len(self.state_window_samples)
+                correct_ratio = correct_count / sample_count
                 self.state_window_debug_info = (
                     f"state_window=collect; target={target_state}; "
-                    f"samples={len(self.state_window_samples)}; "
-                    f"opposite_streak={self.opposite_state_streak}"
+                    f"correct_count={correct_count}; incorrect_count={incorrect_count}; "
+                    f"not_sure_count={not_sure_count}; sample_count={sample_count}; "
+                    f"correct_ratio={correct_ratio:.3f}"
                 )
             else:
-                # The first frame at or beyond the deadline is both voting
-                # evidence and the required end-state confirmation.
-                if eye_state != target_state:
-                    self.reset_progress_state()
-                    if eye_state == first_state:
-                        self._start_state_window(eye_state, now)
-                    return self.current_progress_ratio(self.blink_pattern), False, False
-
+                # The current observation is at or beyond the deadline, so it
+                # is available for the next state but is not part of this window.
                 passed, window_start_s = self._finish_state_window()
                 if not passed:
                     self.reset_progress_state()
@@ -477,9 +567,7 @@ class InferenceWorker(QThread):
                     return ratio, blink, stage_sound_prompt_flag
 
                 self.in_transition_buffer = True
-                self.transition_deadline_s = (
-                    window_start_s + rule_duration + self.transition_buffer_s
-                )
+                self.transition_deadline_s = window_start_s + rule_duration + self.transition_buffer_s
                 if now >= self.transition_deadline_s:
                     self.reset_progress_state()
                     if eye_state == first_state:
