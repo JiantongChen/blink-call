@@ -40,13 +40,13 @@ class EyeStateClassifier:
         self.open_confidence_thresh = float(
             configs.get(
                 "open_confidence_thresh",
-                0.75 if legacy_confidence_thresh is None else legacy_confidence_thresh,
+                0.5 if legacy_confidence_thresh is None else legacy_confidence_thresh,
             )
         )
         self.closed_confidence_thresh = float(
             configs.get(
                 "closed_confidence_thresh",
-                0.75 if legacy_confidence_thresh is None else legacy_confidence_thresh,
+                0.5 if legacy_confidence_thresh is None else legacy_confidence_thresh,
             )
         )
         self.debug_save_inputs = bool(configs.get("debug_save_inputs", False))
@@ -182,6 +182,8 @@ class EyeStateClassifier:
             return self._return_data(
                 state=state,
                 confidence=confidence,
+                model_label=model_label,
+                model_confidence=confidence,
                 debug_info=(
                     f"label={model_label}, confidence={confidence:.3f}, state={state}, "
                     f"confidence_thresh={confidence_thresh}, "
@@ -378,10 +380,20 @@ class EyeStateClassifier:
         exp = np.exp(shifted)
         return exp / np.sum(exp)
 
-    def _return_data(self, state=EyeState.UNKNOWN, confidence=-1, debug_info=""):
+    def _return_data(
+        self,
+        state=EyeState.UNKNOWN,
+        confidence=-1,
+        model_label=EyeState.UNKNOWN.value,
+        model_confidence=-1,
+        debug_info="",
+    ):
         return {
             "timestamp_ms": int(time.time() * 1000),
             "state": state,
+            "model_label": model_label,
+            "model_confidence": model_confidence,
+            # Keep the legacy field for callers that still read confidence.
             "confidence": confidence,
             "debug_info": debug_info,
         }

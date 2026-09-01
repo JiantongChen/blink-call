@@ -219,6 +219,8 @@ class InferenceWorker(QThread):
 
         raw_eye_state = cls_result.get("state")
         eye_state = self.normalize_eye_state(raw_eye_state)
+        model_label = cls_result.get("model_label")
+        model_confidence = cls_result.get("model_confidence")
         confidence = cls_result.get("confidence")
         progress_ratio, blinck_call_flag, stage_sound_prompt_flag = self.update_forward_progress(
             eye_state,
@@ -227,6 +229,9 @@ class InferenceWorker(QThread):
         inference_elapsed_ms = (time.perf_counter() - inference_started) * 1000.0
         inference_finished_timestamp_ms = int(time.time() * 1000)
         confidence_text = "None" if confidence is None else f"{float(confidence):.3f}"
+        model_confidence_text = (
+            "None" if model_confidence is None else f"{float(model_confidence):.3f}"
+        )
         detection_elapsed_ms = self.latest_detection_elapsed_ms
         detection_elapsed_text = "None" if detection_elapsed_ms is None else f"{detection_elapsed_ms:.1f}"
         eye_region_age_ms = None
@@ -253,6 +258,8 @@ class InferenceWorker(QThread):
             "stage_sound_prompt_flag": bool(stage_sound_prompt_flag),
             "blink_progress_ratio": float(progress_ratio),
             "debug_classifier_state": eye_state,
+            "debug_classifier_model_label": model_label,
+            "debug_classifier_model_confidence": model_confidence,
             "debug_classifier_confidence": confidence,
             "debug_eye_bbox_xyxy": classifier_eye_bbox,
             "debug_detector_eye_bbox_xyxy": detector_eye_bbox,
@@ -269,7 +276,9 @@ class InferenceWorker(QThread):
                     f"eye_region_age_ms: {eye_region_age_text}",
                     f"eye_region_detection_pending: {self.pending_eye_region_future is not None}",
                     f"classification_elapsed_ms: {classification_elapsed_ms:.1f}",
-                    f"eye_state: {eye_state}",
+                    f"model_label: {model_label}",
+                    f"model_confidence: {model_confidence_text}",
+                    f"state: {eye_state}",
                     f"raw_eye_state: {raw_eye_state}",
                     f"confidence: {confidence_text}",
                     f"sample_timestamp_s: {sample_timestamp_s:.6f}",

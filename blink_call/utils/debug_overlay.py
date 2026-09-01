@@ -1,6 +1,17 @@
 import cv2
 
 
+def format_classifier_prediction(model_label, model_confidence, state):
+    confidence_text = "n/a"
+    try:
+        if model_confidence is not None and float(model_confidence) >= 0:
+            confidence_text = f"{float(model_confidence):.3f}"
+    except (TypeError, ValueError):
+        pass
+
+    return f"ViTA: {model_label or 'unknown'} ({confidence_text}) -> {state or 'unknown'}"
+
+
 def draw_debug(
     frame,
     info: dict,
@@ -30,7 +41,8 @@ def draw_debug(
     detector_eye_bbox = info.get("debug_detector_eye_bbox_xyxy")
     classifier_eye_bbox = info.get("debug_eye_bbox_xyxy")
     classifier_state = info.get("debug_classifier_state")
-    classifier_confidence = info.get("debug_classifier_confidence")
+    classifier_model_label = info.get("debug_classifier_model_label")
+    classifier_model_confidence = info.get("debug_classifier_model_confidence")
     landmarks = info.get("debug_landmarks")
 
     face_box = get_safe_bbox(face_bbox, w, h)
@@ -72,13 +84,11 @@ def draw_debug(
     if classifier_eye_box is not None:
         left, top, right, bottom = classifier_eye_box
         cv2.rectangle(draw_frame, (left, top), (right, bottom), eye_color, 2)
-        confidence_text = "n/a"
-        try:
-            if classifier_confidence is not None and float(classifier_confidence) >= 0:
-                confidence_text = f"{float(classifier_confidence):.3f}"
-        except (TypeError, ValueError):
-            pass
-        prediction_text = f"ViTA: {classifier_state or 'unknown'} ({confidence_text})"
+        prediction_text = format_classifier_prediction(
+            classifier_model_label,
+            classifier_model_confidence,
+            classifier_state,
+        )
         cv2.putText(
             draw_frame,
             prediction_text,

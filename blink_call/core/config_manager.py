@@ -37,8 +37,8 @@ class ConfigManager:
                 ],
                 "eye_region_detection_algorithm": {},
                 "eye_state_classification_algorithm": {
-                    "open_confidence_thresh": 0.75,
-                    "closed_confidence_thresh": 0.75,
+                    "open_confidence_thresh": 0.5,
+                    "closed_confidence_thresh": 0.5,
                 },
             },
             "debug_mode": False,
