@@ -47,10 +47,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 test*/
-!tests/
-tests/*
-!tests/test_local_capture.py
-!tests/test_inference_worker.py
+# Local test sources are intentionally not versioned.
+tests/
 # Translations
 *.mo
 *.pot
