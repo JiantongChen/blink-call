@@ -14,7 +14,7 @@ The software recognizes the actions in the configured order. After all actions a
 
 The default sequence is:
 
-Eyes open for 2 seconds -> eyes closed for 2 seconds -> eyes open for 2 seconds -> eyes closed for 2 seconds.
+Eyes open for 1.5 seconds -> eyes closed for 1 second -> eyes open for 1 second -> eyes closed for 1.5 seconds.
 
 This sequence is longer than a natural blink, which helps reduce accidental triggering.
 

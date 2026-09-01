@@ -46,7 +46,7 @@ class EyeStateClassifier:
         self.closed_confidence_thresh = float(
             configs.get(
                 "closed_confidence_thresh",
-                0.5 if legacy_confidence_thresh is None else legacy_confidence_thresh,
+                0.75 if legacy_confidence_thresh is None else legacy_confidence_thresh,
             )
         )
         self.debug_save_inputs = bool(configs.get("debug_save_inputs", False))

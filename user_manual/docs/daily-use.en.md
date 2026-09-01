@@ -18,7 +18,7 @@ Open and close the eyes in order according to the current blink sequence.
 
 The default sequence is:
 
-Eyes open for 2 seconds -> eyes closed for 2 seconds -> eyes open for 2 seconds -> eyes closed for 2 seconds.
+Eyes open for 1.5 seconds -> eyes closed for 1 second -> eyes open for 1 second -> eyes closed for 1.5 seconds.
 
 ## Watch the Top Progress Bar
 

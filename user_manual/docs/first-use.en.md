@@ -56,7 +56,7 @@ Both eyes should appear fully in the camera view, and the eyes should not be cov
 
 Use the default blink sequence for testing:
 
-Eyes open for 2 seconds -> eyes closed for 2 seconds -> eyes open for 2 seconds -> eyes closed for 2 seconds.
+Eyes open for 1.5 seconds -> eyes closed for 1 second -> eyes open for 1 second -> eyes closed for 1.5 seconds.
 
 After the call is triggered, the software will play an alert sound. After confirming that the sound works, click the stop button to end the alert.
 

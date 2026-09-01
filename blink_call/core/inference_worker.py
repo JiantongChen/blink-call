@@ -61,6 +61,8 @@ class InferenceWorker(QThread):
         self.valid_eye_states = ("open", "closed")
         self.state_window_start_s = None
         self.state_window_samples = []
+        self.opposite_state_streak = 0
+        self.opposite_state_streak_limit = 2
         self.state_window_debug_info = "state_window=idle"
         self.last_stable_eye_state = None
 
@@ -106,6 +108,7 @@ class InferenceWorker(QThread):
         self.transition_deadline_s = None
         self.state_window_start_s = None
         self.state_window_samples = []
+        self.opposite_state_streak = 0
         self.state_window_debug_info = "state_window=idle; progress_reset=true"
         self.last_stable_eye_state = None
 
@@ -358,12 +361,33 @@ class InferenceWorker(QThread):
             return False
 
         self.state_window_start_s = float(sample_timestamp_s)
-        self.state_window_samples = [eye_state]
+        # The first matching frame anchors the action window but is not voting
+        # evidence. This keeps the transition frame out of the new action and
+        # lets the first subsequent frame verify a one-second window at 1 FPS.
+        self.state_window_samples = []
+        self.opposite_state_streak = 0
         self.progress_in_step_s = 0.0
         self.state_window_debug_info = (
-            f"state_window=collect; target={target_state}; samples=1"
+            f"state_window=collect; target={target_state}; samples=0; anchor=true; "
+            "opposite_streak=0"
         )
         return True
+
+    def _record_state_window_sample(self, eye_state):
+        """Record post-anchor evidence and track consecutive valid opposites."""
+        target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
+        if eye_state == target_state:
+            self.opposite_state_streak = 0
+        elif eye_state in self.valid_eye_states:
+            self.opposite_state_streak += 1
+
+        # Unknown states do not vote and do not clear an existing opposite
+        # streak. Two valid opposite observations therefore still fail when an
+        # uncertain frame occurs between them.
+        if eye_state in self.valid_eye_states:
+            self.state_window_samples.append(eye_state)
+
+        return self.opposite_state_streak >= self.opposite_state_streak_limit
 
     def _finish_state_window(self):
         target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
@@ -382,6 +406,7 @@ class InferenceWorker(QThread):
         window_start_s = self.state_window_start_s
         self.state_window_start_s = None
         self.state_window_samples = []
+        self.opposite_state_streak = 0
         self.progress_in_step_s = 0.0
         self.state_window_debug_info = (
             f"state_window={'passed' if passed else 'failed'}; target={target_state}; "
@@ -406,16 +431,31 @@ class InferenceWorker(QThread):
         if self.state_window_start_s is not None:
             rule_duration = max(0.0, float(self.blink_pattern[self.progress_step_idx]["duration_s"]))
             window_end_s = self.state_window_start_s + rule_duration
+            target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
+            opposite_limit_reached = self._record_state_window_sample(eye_state)
+
+            if opposite_limit_reached:
+                self.reset_progress_state()
+                if eye_state == first_state:
+                    self._start_state_window(eye_state, now)
+                return self.current_progress_ratio(self.blink_pattern), False, False
+
             if now < window_end_s:
-                if eye_state in self.valid_eye_states:
-                    self.state_window_samples.append(eye_state)
                 self.progress_in_step_s = max(0.0, now - self.state_window_start_s)
-                target_state = str(self.blink_pattern[self.progress_step_idx]["state"])
                 self.state_window_debug_info = (
                     f"state_window=collect; target={target_state}; "
-                    f"samples={len(self.state_window_samples)}"
+                    f"samples={len(self.state_window_samples)}; "
+                    f"opposite_streak={self.opposite_state_streak}"
                 )
             else:
+                # The first frame at or beyond the deadline is both voting
+                # evidence and the required end-state confirmation.
+                if eye_state != target_state:
+                    self.reset_progress_state()
+                    if eye_state == first_state:
+                        self._start_state_window(eye_state, now)
+                    return self.current_progress_ratio(self.blink_pattern), False, False
+
                 passed, window_start_s = self._finish_state_window()
                 if not passed:
                     self.reset_progress_state()
