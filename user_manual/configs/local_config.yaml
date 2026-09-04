@@ -1,0 +1,47 @@
+ui:
+  language: zh
+  theme: light
+camera:
+  mode: local
+  local_camera_id: 0
+  fallback:
+    enabled: false
+    camera_id: 1
+  remote:
+    ip: 0.0.0.0
+    port: 17925
+local_service:
+  camera_id: 0
+  port: 17925
+recording:
+  max_duration_min: 1
+  local_dir: /Users/ole/Desktop
+blink_call:
+  enabled: true
+  show_home_progress_bar: true
+  audio:
+    enabled: true
+    file: ring_01.wav
+    volume: 100
+    play_duration_s: 60
+  pattern:
+  - state: open
+    duration_s: 1.5
+    sound_prompt: false
+  - state: closed
+    duration_s: 1.0
+    sound_prompt: true
+  - state: open
+    duration_s: 1.0
+    sound_prompt: true
+  - state: closed
+    duration_s: 1.5
+    sound_prompt: true
+  eye_region_detection_algorithm: {}
+  eye_state_classification_algorithm:
+    open_confidence_thresh: 0.5
+    closed_confidence_thresh: 0.5
+debug_mode: false
+debug_log:
+  save_to_local: false
+  local_dir: /Users/ole/Desktop
